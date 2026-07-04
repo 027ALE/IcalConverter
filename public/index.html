@@ -814,6 +814,14 @@ async function deleteSavedLink(id){
         showAdminMsg(adminManageMsg, 'Errore di rete durante l\'eliminazione.', 'error');
     }
 }
+function resetToEmptyState(){
+    currentModel = null;
+    summaryEl.innerHTML = '';
+    outputEl.innerHTML = '<div class="empty">Carica un file iCal per generare il programma.</div>';
+    saveHtmlBtn.disabled = true;
+    pdfBtn.disabled = true;
+    clearStatus();
+}
 function renderModel(model) {
 
     currentModel = model;
@@ -993,7 +1001,7 @@ function renderModel(model) {
 function buildStaticDocument(){const styles=document.querySelector('style').textContent; const title=currentModel?.calName || 'Programma di viaggio'; return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${styles}</style></head><body><div class="wrap"><div class="toolbar"><div class="title"><h1>${esc(title)}</h1><p></p></div><div class="grid">${summaryEl.innerHTML}</div></div><div class="sheet">${outputEl.innerHTML}</div></div></body></html>`;}
 function saveStaticHTML(){ if(!currentModel) return; try{ const blob=new Blob([buildStaticDocument()],{type:'text/html;charset=utf-8'}); const a=document.createElement('a'); const url=URL.createObjectURL(blob); a.href=url; a.download=(currentModel.calName||'itinerario').replace(/[\\/:*?"<>|]+/g,'-')+'-finale.html'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); setStatus('Pagina finale salvata.'); }catch(err){ console.error(err); setStatus('Salvataggio non riuscito in questo browser.', true); }}
 function generatePdf(){ if(!currentModel) return; const w=window.open('','_blank'); if(!w){ setStatus('Popup bloccato: usa Safari e abilita la nuova finestra.', true); return; } const doc=buildStaticDocument(); w.document.open(); w.document.write(doc); w.document.close(); setTimeout(()=>{ try{ w.focus(); w.print(); } catch(e){ setStatus('Stampa non disponibile in questo browser.', true); } }, 600);} 
-fileInput.addEventListener('change', async e=>{const f=e.target.files && e.target.files[0]; if(!f) return; clearStatus(); try{ const txt=await f.text(); const model=parseICS(txt); renderModel(model); setStatus(`Importazione completata: ${model.events.length} eventi letti da ${f.name}.`); } catch(err){ console.error(err); setStatus('Errore durante la lettura del file iCal.', true); }});
+fileInput.addEventListener('change', async e=>{const f=e.target.files && e.target.files[0]; if(!f) return; clearStatus(); linkSelect.value=''; linkUrlInput.value=''; try{ const txt=await f.text(); const model=parseICS(txt); renderModel(model); setStatus(`Importazione completata: ${model.events.length} eventi letti da ${f.name}.`); } catch(err){ console.error(err); setStatus('Errore durante la lettura del file iCal.', true); }});
 saveHtmlBtn.addEventListener('click', saveStaticHTML);
 pdfBtn.addEventListener('click', generatePdf);
 
@@ -1003,6 +1011,8 @@ searchLinkBtn.addEventListener('click', () => {
         setStatus('Inserisci un link webcal o https, oppure selezionane uno salvato.', true);
         return;
     }
+    fileInput.value = '';
+    if(linkSelect.value !== url) linkSelect.value = '';
     fetchAndLoadLink(url);
 });
 saveLinkBtn.addEventListener('click', () => {
@@ -1017,8 +1027,12 @@ saveLinkBtn.addEventListener('click', () => {
 linkSelect.addEventListener('change', () => {
     const url = linkSelect.value;
     if(url){
+        fileInput.value = '';
         linkUrlInput.value = url;
         fetchAndLoadLink(url);
+    }else{
+        linkUrlInput.value = '';
+        resetToEmptyState();
     }
 });
 
