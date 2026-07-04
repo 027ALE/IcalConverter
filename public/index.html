@@ -89,7 +89,7 @@ a{color:var(--accent)}
   <div id="authScreen" class="auth-screen">
     <div class="card auth-card">
       <h2>Accesso richiesto</h2>
-      <p>Per usare il convertitore e visualizzare i link salvati, accedi con il tuo account Google tramite Netlify Identity.</p>
+      <p>Per usare il convertitore e visualizzare i link salvati, accedi con il tuo account Google.</p>
       <div class="row">
         <button id="authSubmitBtn" type="button">Accedi con Google</button>
       </div>
@@ -184,6 +184,7 @@ const authMsg = document.getElementById('authMsg');
 const appShell = document.getElementById('appShell');
 const logoutBtn = document.getElementById('logoutBtn');
 let currentModel = null;
+let currentAuth = null;
 let savedLinksCache = [];
 const TRAVEL_KEYWORDS =
     '(?:percorrenza|tempo\\s+di\\s+percorrenza|tempo\\s+viaggio|durata\\s+trasferimento)';
@@ -192,9 +193,87 @@ function clearStatus(){statusEl.style.display='none';statusEl.textContent='';}
 function showAuthMessage(msg, warn=false){authMsg.textContent=msg;authMsg.className='status'+(warn?' warn':'');authMsg.style.display='block';}
 function clearAuthMessage(){authMsg.style.display='none';authMsg.textContent='';}
 function getCurrentIdentityUser(){return window.netlifyIdentity ? window.netlifyIdentity.currentUser() : null;}
-function getAuthHeaders(extra={}){const headers=Object.assign({},extra); const user=getCurrentIdentityUser(); const token=user?.token?.access_token || user?.token?.id_token || user?.token?.accessToken || ''; if(token){headers.Authorization=`Bearer ${token}`; headers['x-netlify-identity-token']=token;} return headers;}
-function ensureAuthenticated(){if(!getCurrentIdentityUser()){setStatus('Accedi prima di usare il servizio.', true); return false;} return true;}
-function setAuthState(isAuthenticated, user=null){ if(isAuthenticated && user){ authScreen.classList.add('hidden'); appShell.classList.remove('hidden'); logoutBtn.style.display='inline-flex'; } else { authScreen.classList.remove('hidden'); appShell.classList.add('hidden'); logoutBtn.style.display='none'; adminPanel.hidden=true; adminLoginBox.hidden=false; adminManageBox.hidden=true; clearStatus(); clearAuthMessage(); }}
+function getAuthHeaders(extra={}){return Object.assign({}, extra);}
+async function completeGoogleLogin(user, options={showMessages:true}){
+    const email = user?.email?.trim().toLowerCase() || user?.user?.email?.trim().toLowerCase() || '';
+    if(!email){
+        if(options.showMessages) showAuthMessage('Impossibile completare l\'accesso con Google.', true);
+        return null;
+    }
+    try{
+        const res = await fetch('/api/auth', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, provider: 'google' }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if(!res.ok){
+            currentAuth = null;
+            setAuthState(false);
+            if(options.showMessages) showAuthMessage(data.error || 'Accesso non autorizzato.', true);
+            return null;
+        }
+        currentAuth = data;
+        setAuthState(true, data.user || { email });
+        if(options.showMessages) clearAuthMessage();
+        return data;
+    }catch(err){
+        console.error(err);
+        currentAuth = null;
+        setAuthState(false);
+        if(options.showMessages) showAuthMessage('Impossibile completare l\'accesso.', true);
+        return null;
+    }
+}
+async function refreshAuthState(options={showMessages:false}){
+    try{
+        const res = await fetch('/api/auth', { credentials: 'same-origin' });
+        const data = await res.json().catch(() => ({}));
+        if(!res.ok || !data.ok){
+            currentAuth = null;
+            setAuthState(false);
+            if(options.showMessages && data.error) showAuthMessage(data.error, true);
+            return null;
+        }
+        currentAuth = data;
+        setAuthState(true, data.user || null);
+        return data;
+    }catch(err){
+        console.error(err);
+        currentAuth = null;
+        setAuthState(false);
+        if(options.showMessages) showAuthMessage('Impossibile verificare l\'accesso.', true);
+        return null;
+    }
+}
+async function ensureAuthenticated(){
+    if(currentAuth) return currentAuth;
+    const auth = await refreshAuthState({ showMessages: true });
+    if(!auth){ setStatus('Accedi prima di usare il servizio.', true); return null; }
+    return auth;
+}
+function setAuthState(isAuthenticated, user=null){
+    const isAdmin = Boolean(currentAuth?.isAdmin);
+    if(isAuthenticated && (user || currentAuth)){
+        authScreen.classList.add('hidden');
+        appShell.classList.remove('hidden');
+        logoutBtn.style.display='inline-flex';
+        adminToggle.style.display = isAdmin ? 'inline-block' : 'none';
+        adminPanel.hidden = !isAdmin;
+        if(!isAdmin){ adminLoginBox.hidden = false; adminManageBox.hidden = true; clearAdminMsg(adminLoginMsg); }
+    } else {
+        authScreen.classList.remove('hidden');
+        appShell.classList.add('hidden');
+        logoutBtn.style.display='none';
+        adminToggle.style.display='none';
+        adminPanel.hidden=true;
+        adminLoginBox.hidden=false;
+        adminManageBox.hidden=true;
+        clearStatus();
+        clearAuthMessage();
+    }
+}
 function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function unescapeICS(v=''){return v.replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\');}
 function unfold(text){return text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n[ \t]/g,'');}
@@ -741,9 +820,9 @@ function renderLinkSelect(links, selectedUrl=''){
     if(selectedUrl) linkSelect.value = selectedUrl;
 }
 async function loadSavedLinks(){
-    if(!ensureAuthenticated()) return;
+    if(!await ensureAuthenticated()) return;
     try{
-        const res = await fetch('/api/links', { headers: getAuthHeaders() });
+        const res = await fetch('/api/links', { credentials: 'same-origin', headers: getAuthHeaders() });
         if(!res.ok) return;
         const data = await res.json();
         savedLinksCache = data.links || [];
@@ -753,10 +832,11 @@ async function loadSavedLinks(){
     }
 }
 async function saveLinkPublic(url, label){
-    if(!ensureAuthenticated()) return;
+    if(!await ensureAuthenticated()) return;
     try{
         const res = await fetch('/api/links', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ url, label }),
         });
@@ -773,7 +853,7 @@ async function saveLinkPublic(url, label){
     }
 }
 async function fetchAndLoadLink(url){
-    if(!ensureAuthenticated()) return;
+    if(!await ensureAuthenticated()) return;
     if(!url){
         setStatus('Inserisci o seleziona un link.', true);
         return;
@@ -782,7 +862,7 @@ async function fetchAndLoadLink(url){
     searchLinkBtn.disabled = true;
     setStatus('Recupero calendario in corso…');
     try{
-        const res = await fetch(`/api/fetch-ical?url=${encodeURIComponent(url)}`, { headers: getAuthHeaders() });
+        const res = await fetch(`/api/fetch-ical?url=${encodeURIComponent(url)}`, { credentials: 'same-origin', headers: getAuthHeaders() });
         if(!res.ok){
             let msg = `Errore HTTP ${res.status}`;
             try{
@@ -815,7 +895,7 @@ function clearAdminMsg(el){
     el.textContent = '';
 }
 async function adminFetch(url, options = {}){
-    return fetch(url, Object.assign({}, options, { headers: getAuthHeaders(options.headers) }));
+    return fetch(url, Object.assign({}, options, { credentials: 'same-origin' }));
 }
 function renderAdminLinks(links){
     adminLinksList.innerHTML = '';
@@ -1065,14 +1145,14 @@ function renderModel(model) {
     outputEl.innerHTML = cover + daysHtml;
 }
 function buildStaticDocument(){const styles=document.querySelector('style').textContent; const title=currentModel?.calName || 'Programma di viaggio'; return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${styles}</style></head><body><div class="wrap"><div class="toolbar"><div class="title"><h1>${esc(title)}</h1><p></p></div><div class="grid">${summaryEl.innerHTML}</div></div><div class="sheet">${outputEl.innerHTML}</div></div></body></html>`;}
-function saveStaticHTML(){ if(!currentModel || !ensureAuthenticated()) return; try{ const blob=new Blob([buildStaticDocument()],{type:'text/html;charset=utf-8'}); const a=document.createElement('a'); const url=URL.createObjectURL(blob); a.href=url; a.download=(currentModel.calName||'itinerario').replace(/[\\/:*?"<>|]+/g,'-')+'-finale.html'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); setStatus('Pagina finale salvata.'); }catch(err){ console.error(err); setStatus('Salvataggio non riuscito in questo browser.', true); }}
-function generatePdf(){ if(!currentModel || !ensureAuthenticated()) return; const w=window.open('','_blank'); if(!w){ setStatus('Popup bloccato: usa Safari e abilita la nuova finestra.', true); return; } const doc=buildStaticDocument(); w.document.open(); w.document.write(doc); w.document.close(); setTimeout(()=>{ try{ w.focus(); w.print(); } catch(e){ setStatus('Stampa non disponibile in questo browser.', true); } }, 600);} 
-fileInput.addEventListener('change', async e=>{const f=e.target.files && e.target.files[0]; if(!f || !ensureAuthenticated()) return; clearStatus(); linkSelect.value=''; linkUrlInput.value=''; try{ const txt=await f.text(); const model=parseICS(txt); renderModel(model); setStatus(`Importazione completata: ${model.events.length} eventi letti da ${f.name}.`); } catch(err){ console.error(err); setStatus('Errore durante la lettura del file iCal.', true); }});
+function saveStaticHTML(){ if(!currentModel) return; try{ const blob=new Blob([buildStaticDocument()],{type:'text/html;charset=utf-8'}); const a=document.createElement('a'); const url=URL.createObjectURL(blob); a.href=url; a.download=(currentModel.calName||'itinerario').replace(/[\\/:*?"<>|]+/g,'-')+'-finale.html'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); setStatus('Pagina finale salvata.'); }catch(err){ console.error(err); setStatus('Salvataggio non riuscito in questo browser.', true); }}
+function generatePdf(){ if(!currentModel) return; const w=window.open('','_blank'); if(!w){ setStatus('Popup bloccato: usa Safari e abilita la nuova finestra.', true); return; } const doc=buildStaticDocument(); w.document.open(); w.document.write(doc); w.document.close(); setTimeout(()=>{ try{ w.focus(); w.print(); } catch(e){ setStatus('Stampa non disponibile in questo browser.', true); } }, 600);} 
+fileInput.addEventListener('change', async e=>{const f=e.target.files && e.target.files[0]; if(!f) return; if(!await ensureAuthenticated()) return; clearStatus(); linkSelect.value=''; linkUrlInput.value=''; try{ const txt=await f.text(); const model=parseICS(txt); renderModel(model); setStatus(`Importazione completata: ${model.events.length} eventi letti da ${f.name}.`); } catch(err){ console.error(err); setStatus('Errore durante la lettura del file iCal.', true); }});
 saveHtmlBtn.addEventListener('click', saveStaticHTML);
 pdfBtn.addEventListener('click', generatePdf);
 
-searchLinkBtn.addEventListener('click', () => {
-    if(!ensureAuthenticated()) return;
+searchLinkBtn.addEventListener('click', async () => {
+    if(!await ensureAuthenticated()) return;
     const url = (linkUrlInput.value || linkSelect.value || '').trim();
     if(!url){
         setStatus('Inserisci un link webcal o https, oppure selezionane uno salvato.', true);
@@ -1082,8 +1162,8 @@ searchLinkBtn.addEventListener('click', () => {
     if(linkSelect.value !== url) linkSelect.value = '';
     fetchAndLoadLink(url);
 });
-saveLinkBtn.addEventListener('click', () => {
-    if(!ensureAuthenticated()) return;
+saveLinkBtn.addEventListener('click', async () => {
+    if(!await ensureAuthenticated()) return;
     const url = (linkUrlInput.value || linkSelect.value || '').trim();
     if(!url){
         setStatus('Inserisci un link da salvare.', true);
@@ -1092,8 +1172,8 @@ saveLinkBtn.addEventListener('click', () => {
     const label = linkLabelInput.value.trim();
     saveLinkPublic(url, label);
 });
-linkSelect.addEventListener('change', () => {
-    if(!ensureAuthenticated()) return;
+linkSelect.addEventListener('change', async () => {
+    if(!await ensureAuthenticated()) return;
     const url = linkSelect.value;
     if(url){
         fileInput.value = '';
@@ -1105,12 +1185,12 @@ linkSelect.addEventListener('change', () => {
     }
 });
 
-adminToggle.addEventListener('click', () => {
-    if(!ensureAuthenticated()) return;
+adminToggle.addEventListener('click', async () => {
+    if(!await ensureAuthenticated()) return;
     adminPanel.hidden = !adminPanel.hidden;
 });
 authSubmitBtn.addEventListener('click', () => {
-    if(!window.netlifyIdentity){ showAuthMessage('Netlify Identity non è disponibile in questo contesto.', true); return; }
+    if(!window.netlifyIdentity){ showAuthMessage('Google authentication non è disponibile in questo contesto.', true); return; }
     authSubmitBtn.disabled = true;
     try{
         window.netlifyIdentity.open('login');
@@ -1121,22 +1201,29 @@ authSubmitBtn.addEventListener('click', () => {
         setTimeout(() => { authSubmitBtn.disabled = false; }, 300);
     }
 });
-logoutBtn.addEventListener('click', () => {
+logoutBtn.addEventListener('click', async () => {
+    try{
+        await fetch('/api/auth', { method: 'DELETE', credentials: 'same-origin' });
+    }catch(err){
+        console.error(err);
+    }
+    currentAuth = null;
     if(window.netlifyIdentity){
         window.netlifyIdentity.logout();
-        showAuthMessage('Hai effettuato il logout.', false);
     }
+    setAuthState(false);
+    showAuthMessage('Hai effettuato il logout.', false);
 });
 adminLoginBtn.addEventListener('click', async () => {
-    if(!getCurrentIdentityUser()){
-        if(window.netlifyIdentity){
-            window.netlifyIdentity.open('login');
-        }
+    const auth = await ensureAuthenticated();
+    if(!auth){ return; }
+    if(!auth.isAdmin){
+        showAdminMsg(adminLoginMsg, 'Solo gli amministratori possono gestire i link salvati.', 'error');
         return;
     }
     adminLoginBtn.disabled = true;
     try{
-        const res = await fetch('/api/links', { headers: getAuthHeaders() });
+        const res = await fetch('/api/links', { credentials: 'same-origin' });
         const data = await res.json().catch(() => ({}));
         if(!res.ok){
             showAdminMsg(adminLoginMsg, data.error || 'Accesso non consentito.', 'error');
@@ -1190,11 +1277,29 @@ function initNetlifyIdentity(){
         return;
     }
     window.netlifyIdentity.init();
-    window.netlifyIdentity.on('init', user => setAuthState(Boolean(user), user));
-    window.netlifyIdentity.on('login', user => { clearAuthMessage(); setAuthState(true, user); loadSavedLinks(); setStatus('Accesso eseguito con Google.'); });
-    window.netlifyIdentity.on('logout', () => { setAuthState(false); clearStatus(); showAuthMessage('Sei uscito. Accedi di nuovo per usare il servizio.', false); });
+    window.netlifyIdentity.on('init', user => {
+        if(user){
+            completeGoogleLogin(user, { showMessages: false });
+        } else {
+            refreshAuthState({ showMessages: false });
+        }
+    });
+    window.netlifyIdentity.on('login', async user => {
+        const auth = await completeGoogleLogin(user, { showMessages: false });
+        if(auth){
+            clearAuthMessage();
+            loadSavedLinks();
+            setStatus('Accesso eseguito con Google.');
+        }
+    });
+    window.netlifyIdentity.on('logout', () => {
+        currentAuth = null;
+        setAuthState(false);
+        clearStatus();
+        showAuthMessage('Sei uscito. Accedi di nuovo per usare il servizio.', false);
+    });
     window.netlifyIdentity.on('error', err => showAuthMessage(err?.message || 'Errore di autenticazione.', true));
-    setAuthState(Boolean(window.netlifyIdentity.currentUser()), window.netlifyIdentity.currentUser());
+    refreshAuthState({ showMessages: false });
 }
 initNetlifyIdentity();
 </script>

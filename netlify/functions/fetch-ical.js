@@ -1,19 +1,8 @@
-function jsonResponse(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store",
-    },
-  });
-}
+import { getAuthenticatedUser, getUserEmail, isAllowedUser, jsonResponse } from "./auth-utils.js";
 
-function isAuthenticated(context) {
-  return Boolean(context?.clientContext?.user);
-}
-
-export default async (req, context) => {
-  if (!isAuthenticated(context)) {
+export default async (req) => {
+  const user = await getAuthenticatedUser(req);
+  if (!user || !getUserEmail(user) || !isAllowedUser(user)) {
     return jsonResponse({ error: "Autenticazione richiesta." }, 401);
   }
 

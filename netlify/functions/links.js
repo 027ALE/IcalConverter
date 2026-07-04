@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { getAuthenticatedUser, getUserEmail, isAdminUser, isAllowedUser, jsonResponse } from "./auth-utils.js";
 
 const STORE_NAME = "webcal-links";
 const KEY = "links.json";
@@ -48,12 +49,9 @@ function jsonResponse(body, status = 200) {
   });
 }
 
-function isAuthenticated(context) {
-  return Boolean(context?.clientContext?.user);
-}
-
-export default async (req, context) => {
-  if (!isAuthenticated(context)) {
+export default async (req) => {
+  const user = await getAuthenticatedUser(req);
+  if (!user || !getUserEmail(user) || !isAllowedUser(user)) {
     return jsonResponse({ error: "Autenticazione richiesta." }, 401);
   }
 
@@ -98,6 +96,10 @@ export default async (req, context) => {
   }
 
   if (method === "PUT") {
+    if (!isAdminUser(user)) {
+      return jsonResponse({ error: "Solo gli amministratori possono modificare i link." }, 403);
+    }
+
     let body;
     try {
       body = await req.json();
@@ -129,6 +131,10 @@ export default async (req, context) => {
   }
 
   if (method === "DELETE") {
+    if (!isAdminUser(user)) {
+      return jsonResponse({ error: "Solo gli amministratori possono eliminare i link." }, 403);
+    }
+
     const id = new URL(req.url).searchParams.get("id");
     if (!id) {
       return jsonResponse({ error: "ID mancante." }, 400);
