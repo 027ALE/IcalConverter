@@ -1187,15 +1187,26 @@ adminToggle.addEventListener('click', async () => {
     adminPanel.hidden = !adminPanel.hidden;
 });
 authSubmitBtn.addEventListener('click', () => {
-    if(!window.netlifyIdentity){ showAuthMessage('Google authentication non è disponibile in questo contesto.', true); return; }
     authSubmitBtn.disabled = true;
+    showAuthMessage('Apertura del login Google…', false);
+
+    const redirectTo = `${window.location.origin}/.netlify/identity/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.href)}`;
+
+    if(!window.netlifyIdentity){
+        window.location.assign(redirectTo);
+        return;
+    }
+
     try{
-        window.netlifyIdentity.open('login');
+        const popup = window.netlifyIdentity.open('login');
+        if(!popup){
+            window.location.assign(redirectTo);
+        }
     }catch(err){
         console.error(err);
-        showAuthMessage('Impossibile aprire il flusso di accesso.', true);
+        window.location.assign(redirectTo);
     }finally{
-        setTimeout(() => { authSubmitBtn.disabled = false; }, 300);
+        setTimeout(() => { authSubmitBtn.disabled = false; }, 1200);
     }
 });
 logoutBtn.addEventListener('click', async () => {
