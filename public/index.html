@@ -1204,11 +1204,6 @@ authSubmitBtn.addEventListener('click', async () => {
     const authUrl = `/.netlify/identity/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
 
     try{
-        const settingsRes = await fetch('/.netlify/identity/settings', { credentials: 'same-origin' });
-        if(!settingsRes.ok){
-            showAuthMessage('Netlify Identity non è disponibile per questo sito. Controlla la configurazione di Netlify.', true);
-            return;
-        }
         window.location.assign(authUrl);
     }catch(err){
         console.error(err);
