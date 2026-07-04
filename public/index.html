@@ -222,6 +222,18 @@ async function completeGoogleLogin(user, options={showMessages:true}){
 }
 async function refreshAuthState(options={showMessages:false}){
     try{
+        const identityUser = window.netlifyIdentity?.currentUser?.();
+        if(identityUser?.email){
+            currentAuth = {
+                ok: true,
+                user: { email: identityUser.email },
+                isAllowed: true,
+                isAdmin: false,
+            };
+            setAuthState(true, currentAuth.user);
+            return currentAuth;
+        }
+
         const res = await fetch('/api/auth', { credentials: 'same-origin' });
         const data = await res.json().catch(() => ({}));
         if(res.ok && data.ok){
@@ -1283,6 +1295,35 @@ adminAddBtn.addEventListener('click', async () => {
 });
 
 function initAuthFlow(){
+    if(!window.netlifyIdentity){
+        window.setTimeout(initAuthFlow, 200);
+        return;
+    }
+
+    window.netlifyIdentity.init();
+    window.netlifyIdentity.on('init', user => {
+        if(user){
+            currentAuth = { ok: true, user: { email: user.email }, isAllowed: true, isAdmin: false };
+            setAuthState(true, currentAuth.user);
+            loadSavedLinks();
+        } else {
+            refreshAuthState({ showMessages: false });
+        }
+    });
+    window.netlifyIdentity.on('login', user => {
+        currentAuth = { ok: true, user: { email: user.email }, isAllowed: true, isAdmin: false };
+        setAuthState(true, currentAuth.user);
+        clearAuthMessage();
+        loadSavedLinks();
+        setStatus('Accesso eseguito con Google.');
+    });
+    window.netlifyIdentity.on('logout', () => {
+        currentAuth = null;
+        setAuthState(false);
+        clearStatus();
+        showAuthMessage('Sei uscito. Accedi di nuovo per usare il servizio.', false);
+    });
+
     refreshAuthState({ showMessages: false });
     window.addEventListener('pageshow', () => {
         refreshAuthState({ showMessages: false });
@@ -1290,5 +1331,6 @@ function initAuthFlow(){
 }
 initAuthFlow();
 </script>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </body>
 </html>
