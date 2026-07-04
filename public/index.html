@@ -185,14 +185,12 @@ const appShell = document.getElementById('appShell');
 const logoutBtn = document.getElementById('logoutBtn');
 let currentModel = null;
 let currentAuth = null;
-let savedLinksCache = [];
 const TRAVEL_KEYWORDS =
     '(?:percorrenza|tempo\\s+di\\s+percorrenza|tempo\\s+viaggio|durata\\s+trasferimento)';
 function setStatus(msg, warn=false){statusEl.textContent=msg;statusEl.className='status'+(warn?' warn':'');statusEl.style.display='block';}
 function clearStatus(){statusEl.style.display='none';statusEl.textContent='';}
 function showAuthMessage(msg, warn=false){authMsg.textContent=msg;authMsg.className='status'+(warn?' warn':'');authMsg.style.display='block';}
 function clearAuthMessage(){authMsg.style.display='none';authMsg.textContent='';}
-function getCurrentIdentityUser(){return window.netlifyIdentity ? window.netlifyIdentity.currentUser() : null;}
 function getAuthHeaders(extra={}){return Object.assign({}, extra);}
 async function completeGoogleLogin(user, options={showMessages:true}){
     const email = user?.email?.trim().toLowerCase() || user?.user?.email?.trim().toLowerCase() || '';
@@ -825,8 +823,7 @@ async function loadSavedLinks(){
         const res = await fetch('/api/links', { credentials: 'same-origin', headers: getAuthHeaders() });
         if(!res.ok) return;
         const data = await res.json();
-        savedLinksCache = data.links || [];
-        renderLinkSelect(savedLinksCache);
+        renderLinkSelect(data.links || []);
     }catch(err){
         console.error(err);
     }

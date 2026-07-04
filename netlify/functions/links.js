@@ -39,16 +39,6 @@ function normalizeLabel(raw) {
   return raw.trim().slice(0, 120);
 }
 
-function jsonResponse(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store",
-    },
-  });
-}
-
 export default async (req) => {
   const user = await getAuthenticatedUser(req);
   if (!user || !getUserEmail(user) || !isAllowedUser(user)) {
