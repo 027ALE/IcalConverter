@@ -1303,19 +1303,18 @@ function initAuthFlow(){
     window.netlifyIdentity.init();
     window.netlifyIdentity.on('init', user => {
         if(user){
-            currentAuth = { ok: true, user: { email: user.email }, isAllowed: true, isAdmin: false };
-            setAuthState(true, currentAuth.user);
-            loadSavedLinks();
+            completeGoogleLogin(user, { showMessages: false });
         } else {
             refreshAuthState({ showMessages: false });
         }
     });
-    window.netlifyIdentity.on('login', user => {
-        currentAuth = { ok: true, user: { email: user.email }, isAllowed: true, isAdmin: false };
-        setAuthState(true, currentAuth.user);
-        clearAuthMessage();
-        loadSavedLinks();
-        setStatus('Accesso eseguito con Google.');
+    window.netlifyIdentity.on('login', async user => {
+        const auth = await completeGoogleLogin(user, { showMessages: false });
+        if(auth){
+            clearAuthMessage();
+            loadSavedLinks();
+            setStatus('Accesso eseguito con Google.');
+        }
     });
     window.netlifyIdentity.on('logout', () => {
         currentAuth = null;
