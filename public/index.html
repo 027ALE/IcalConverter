@@ -2,57 +2,95 @@
 <html lang="it">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Itinerario da iCal - Shortcut</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#f6f3ee" />
+<title>Itinerario di viaggio</title>
 <style>
-:root{--bg:#f6f3ee;--paper:#fff;--ink:#1f1f1f;--muted:#6a6a6a;--line:#ddd3c7;--soft:#f3ece3;--accent:#7b4f2a;--ok:#eef7ef;--okb:#cfe7d0;--warn:#fff6e9;--warnb:#ead6aa;--radius:16px}
-*{box-sizing:border-box;min-width:0} body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden}
-.link-btn{
-    color:#0a84ff;
-    text-decoration:none;
-    font-weight:600;
-}
-
-.link-btn:hover{
-    text-decoration:underline;
-}
-.wrap{max-width:1120px;margin:0 auto;padding:16px}.toolbar,.card,.day{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);width:100%;max-width:100%}
-.toolbar{padding:18px;display:grid;gap:14px;box-shadow:0 8px 28px rgba(0,0,0,.06)}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.title{display:grid;gap:6px}.title h1,.day h2,.stat .v{margin:0}.title p,.muted{color:var(--muted)}
-input[type=file]{padding:10px 12px;background:var(--soft);border:1px solid var(--line);border-radius:10px;max-width:100%;width:100%}
-select,input[type=url]{padding:10px 12px;background:var(--soft);border:1px solid var(--line);border-radius:10px;max-width:100%;flex:1;min-width:180px;font:inherit;color:var(--ink)}
-button{border:0;background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+:root{--bg:#f5f2ec;--paper:#fffdfa;--ink:#211f1c;--muted:#8a8377;--line:#e7ddcd;--soft:#f1eade;--accent:#c96f42;--accent-ink:#fff;--ok:#eef8f0;--okb:#cbe8d1;--warn:#fff4e6;--warnb:#f0cf9c;--radius:20px;--radius-sm:14px;--shadow:0 10px 30px rgba(35,25,15,.08)}
+*{box-sizing:border-box;min-width:0} html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
+.link-btn{color:#0a84ff;text-decoration:none;font-weight:600}
+.link-btn:hover{text-decoration:underline}
+.wrap{max-width:1120px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 24px}
+.toolbar,.card,.day{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);width:100%;max-width:100%}
+.toolbar{padding:20px;display:grid;gap:14px;box-shadow:var(--shadow)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.title{display:grid;gap:6px;margin-bottom:2px}
+.title h1,.day h2,.stat .v{margin:0}
+.title h1{font-size:22px;letter-spacing:-.01em}
+.title p,.muted{color:var(--muted)}
+.title p{font-size:14px;line-height:1.45;margin:0}
+.section-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin:4px 0 -4px}
+input[type=file]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;width:100%;font-size:15px;min-height:46px}
+select,input[type=url],input[type=text],input[type=password]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;flex:1;min-width:180px;font:inherit;font-size:16px;color:var(--ink);min-height:46px;-webkit-appearance:none;appearance:none}
+select:focus,input:focus{outline:none;border-color:var(--accent)}
+button{border:0;background:var(--accent);color:var(--accent-ink);padding:12px 18px;border-radius:var(--radius-sm);font-weight:700;font-size:15px;cursor:pointer;min-height:46px;transition:transform .08s ease,opacity .15s ease}
+button:active{transform:scale(.97)}
 button.secondary{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
 button.danger{background:#fbeceb;color:#a3342a;border:1px solid #f1c9c5}
-.link-admin-row{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;background:#fff}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.link-admin-row{border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;display:grid;gap:8px;background:#fff}
 .link-admin-row .row-buttons{display:flex;gap:8px}
-.link-admin-row .row-buttons button{flex:1;padding:8px 10px;font-size:13px}
-.link-admin-row label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}button:disabled{opacity:.55;cursor:not-allowed}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));width:100%;max-width:100%}.stat{padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff;overflow-wrap:anywhere}.stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.stat .v{font-size:22px;margin-top:4px;overflow-wrap:anywhere}
-.status{padding:10px 12px;border-radius:12px;border:1px solid var(--okb);background:var(--ok);display:none;overflow-wrap:anywhere}.status.warn{background:var(--warn);border-color:var(--warnb)}
-.sheet{margin-top:18px;display:grid;gap:18px;width:100%;max-width:100%}.cover{padding:22px;overflow:hidden}.cover h2{margin:0 0 8px}
-.day{overflow:hidden;page-break-inside:avoid}.day-head{padding:18px 20px;background:linear-gradient(135deg,#fff,#f4ede5);border-bottom:1px solid var(--line)}.day-head h2{font-size:22px}.day-head .meta{color:var(--muted);margin-top:4px}
-.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:12px 14px;vertical-align:top;border-bottom:1px solid #eee5da;overflow-wrap:anywhere;word-break:break-word}th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;background:#fcfaf7}tr:last-child td{border-bottom:0}.time{width:110px;white-space:nowrap;font-weight:700}.place-col{width:34%}.ev-title{font-weight:700}.small{font-size:12px;color:var(--muted);margin-top:4px}.pill{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:999px;background:#f5ede4;border:1px solid #e6d5c3;font-size:12px;color:#6b4527;max-width:100%;overflow-wrap:anywhere}.travel-meta{margin-top:6px;font-size:12px;color:var(--muted);font-style:italic}a{color:#6a3d16}.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px;background:var(--paper)}
-.instructions{background:#fbf7f2;border:1px solid #eadccf;border-radius:14px;padding:14px;display:grid;gap:8px}.instructions ol{margin:0;padding-left:18px}.instructions li{margin:4px 0}
-@media (max-width:760px){.wrap{padding:12px}.toolbar{padding:14px}.row{flex-direction:column;align-items:stretch}.time{width:82px}.place-col{width:38%}th,td{padding:10px 9px;font-size:13px}.day-head{padding:14px}.day-head h2{font-size:19px}}
-@media print{body{background:#fff}.no-print{display:none!important}.wrap{max-width:none;padding:0}.toolbar{box-shadow:none;border:none;padding:0 0 12px 0}.day,.card,.cover{border-radius:0}.sheet{margin-top:10px}@page{size:A4;margin:11mm}}
+.link-admin-row .row-buttons button{flex:1;padding:9px 10px;font-size:13px;min-height:40px}
+.link-admin-row label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));width:100%;max-width:100%}
+.stat{padding:14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;overflow-wrap:anywhere}
+.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-size:20px;margin-top:4px;overflow-wrap:anywhere;font-weight:700}
+.status{padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--okb);background:var(--ok);display:none;overflow-wrap:anywhere;font-size:14px}
+.status.warn{background:var(--warn);border-color:var(--warnb)}
+.sheet{margin-top:18px;display:grid;gap:16px;width:100%;max-width:100%}
+.cover{padding:22px;overflow:hidden}
+.cover h2{margin:0 0 8px;font-size:20px}
+.day{overflow:hidden;page-break-inside:avoid}
+.day-head{padding:16px 18px;background:linear-gradient(135deg,#fff,#f6efe5);border-bottom:1px solid var(--line)}
+.day-head h2{font-size:18px}
+.day-head .meta{color:var(--muted);margin-top:2px;font-size:13px}
+.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{padding:12px 12px;vertical-align:top;border-bottom:1px solid #f0e9dd;overflow-wrap:anywhere;word-break:break-word}
+th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;background:#fcfaf6}
+tr:last-child td{border-bottom:0}
+.time{width:96px;white-space:nowrap;font-weight:700;font-size:14px}
+.place-col{width:32%}
+.ev-title{font-weight:700;font-size:15px}
+.small{font-size:12px;color:var(--muted);margin-top:4px}
+.pill{display:inline-block;margin-top:6px;padding:4px 9px;border-radius:999px;background:#f6ede0;border:1px solid #ecd9bd;font-size:12px;color:#7a4a1f;max-width:100%;overflow-wrap:anywhere}
+.travel-meta{margin-top:6px;font-size:12px;color:var(--muted);font-style:italic}
+a{color:var(--accent)}
+.empty{padding:32px 20px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:var(--radius);background:var(--paper)}
+@media (max-width:760px){
+  .wrap{padding:12px 12px 24px}
+  .toolbar{padding:16px;border-radius:18px}
+  .row{flex-direction:column;align-items:stretch}
+  .row>*{width:100%}
+  select,input[type=url],input[type=text],input[type=password],input[type=file],button{width:100%}
+  .time{width:auto}
+  .place-col{width:auto}
+  th,td{padding:10px 10px;font-size:13px}
+  .day-head{padding:14px}
+  .day-head h2{font-size:17px}
+  .title h1{font-size:20px}
+}
+@media print{
+  body{background:#fff}
+  .no-print{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .toolbar{box-shadow:none;border:none;padding:0 0 12px 0}
+  .day,.card,.cover{border-radius:0}
+  .sheet{margin-top:10px}
+  @page{size:A4;margin:11mm}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="toolbar">
     <div class="title">
-      <h1>Itinerario da iCal</h1>
-      <p>Versione pensata per Comandi Rapidi su iPhone: scegli il file .ics e genera una pagina finale pronta da salvare o condividere.</p>
+      <h1>Itinerario di viaggio</h1>
+      <p>Carica un calendario .ics oppure incolla il link di un calendario condiviso per generare un programma pronto da salvare o condividere.</p>
     </div>
-    <div class="instructions no-print">
-      <strong>Come usarlo in Comandi Rapidi</strong>
-      <ol>
-        <li>Carica questo HTML in Safari o in una web view.</li>
-        <li>Il comando rapido passa il file .ics al browser/script.</li>
-        <li>Premi il pulsante di esportazione per ottenere la pagina finale.</li>
-      </ol>
-    </div>
+    <div class="section-label no-print">Da un link webcal o iCal</div>
     <div class="row no-print">
       <select id="linkSelect" aria-label="Link salvati">
         <option value="">— Link salvati —</option>
@@ -62,6 +100,7 @@ button.danger{background:#fbeceb;color:#a3342a;border:1px solid #f1c9c5}
       <button id="searchLinkBtn" type="button">Cerca link</button>
       <button id="saveLinkBtn" type="button" class="secondary">Salva link</button>
     </div>
+    <div class="section-label no-print">Oppure da un file</div>
     <div class="row no-print">
       <input id="fileInput" type="file" accept=".ics,text/calendar,.ical,.ifb,.txt" />
       <button id="saveHtmlBtn" disabled>Esporta pagina finale</button>

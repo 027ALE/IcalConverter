@@ -4,7 +4,7 @@ const STORE_NAME = "webcal-links";
 const KEY = "links.json";
 
 function getStoreInstance() {
-  return getStore(STORE_NAME);
+  return getStore({ name: STORE_NAME, consistency: "strong" });
 }
 
 async function readLinks(store) {
@@ -41,7 +41,10 @@ function normalizeLabel(raw) {
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    },
   });
 }
 
