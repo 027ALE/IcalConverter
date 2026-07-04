@@ -194,10 +194,6 @@ function clearAuthMessage(){authMsg.style.display='none';authMsg.textContent='';
 function getAuthHeaders(extra={}){return Object.assign({}, extra);}
 async function completeGoogleLogin(user, options={showMessages:true}){
     const email = user?.email?.trim().toLowerCase() || user?.user?.email?.trim().toLowerCase() || '';
-    if(!email){
-        if(options.showMessages) showAuthMessage('Impossibile completare l\'accesso con Google.', true);
-        return null;
-    }
     try{
         const res = await fetch('/api/auth', {
             method: 'POST',
@@ -228,15 +224,29 @@ async function refreshAuthState(options={showMessages:false}){
     try{
         const res = await fetch('/api/auth', { credentials: 'same-origin' });
         const data = await res.json().catch(() => ({}));
-        if(!res.ok || !data.ok){
-            currentAuth = null;
-            setAuthState(false);
-            if(options.showMessages && data.error) showAuthMessage(data.error, true);
-            return null;
+        if(res.ok && data.ok){
+            currentAuth = data;
+            setAuthState(true, data.user || null);
+            return data;
         }
-        currentAuth = data;
-        setAuthState(true, data.user || null);
-        return data;
+
+        const loginRes = await fetch('/api/auth', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider: 'google' }),
+        });
+        const loginData = await loginRes.json().catch(() => ({}));
+        if(loginRes.ok && loginData.ok){
+            currentAuth = loginData;
+            setAuthState(true, loginData.user || null);
+            return loginData;
+        }
+
+        currentAuth = null;
+        setAuthState(false);
+        if(options.showMessages && data.error) showAuthMessage(data.error, true);
+        return null;
     }catch(err){
         console.error(err);
         currentAuth = null;
@@ -1186,25 +1196,23 @@ adminToggle.addEventListener('click', async () => {
     if(!await ensureAuthenticated()) return;
     adminPanel.hidden = !adminPanel.hidden;
 });
-authSubmitBtn.addEventListener('click', () => {
+authSubmitBtn.addEventListener('click', async () => {
     authSubmitBtn.disabled = true;
-    showAuthMessage('Apertura del login Google…', false);
+    showAuthMessage('Reindirizzamento al login Google…', false);
 
-    const redirectTo = `${window.location.origin}/.netlify/identity/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.href)}`;
-
-    if(!window.netlifyIdentity){
-        window.location.assign(redirectTo);
-        return;
-    }
+    const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    const authUrl = `/.netlify/identity/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
 
     try{
-        const popup = window.netlifyIdentity.open('login');
-        if(!popup){
-            window.location.assign(redirectTo);
+        const settingsRes = await fetch('/.netlify/identity/settings', { credentials: 'same-origin' });
+        if(!settingsRes.ok){
+            showAuthMessage('Netlify Identity non è disponibile per questo sito. Controlla la configurazione di Netlify.', true);
+            return;
         }
+        window.location.assign(authUrl);
     }catch(err){
         console.error(err);
-        window.location.assign(redirectTo);
+        showAuthMessage('Impossibile avviare il login Google. Controlla la configurazione di Netlify Identity.', true);
     }finally{
         setTimeout(() => { authSubmitBtn.disabled = false; }, 1200);
     }
@@ -1279,38 +1287,13 @@ adminAddBtn.addEventListener('click', async () => {
     }
 });
 
-function initNetlifyIdentity(){
-    if(!window.netlifyIdentity){
-        window.setTimeout(initNetlifyIdentity, 100);
-        return;
-    }
-    window.netlifyIdentity.init();
-    window.netlifyIdentity.on('init', user => {
-        if(user){
-            completeGoogleLogin(user, { showMessages: false });
-        } else {
-            refreshAuthState({ showMessages: false });
-        }
-    });
-    window.netlifyIdentity.on('login', async user => {
-        const auth = await completeGoogleLogin(user, { showMessages: false });
-        if(auth){
-            clearAuthMessage();
-            loadSavedLinks();
-            setStatus('Accesso eseguito con Google.');
-        }
-    });
-    window.netlifyIdentity.on('logout', () => {
-        currentAuth = null;
-        setAuthState(false);
-        clearStatus();
-        showAuthMessage('Sei uscito. Accedi di nuovo per usare il servizio.', false);
-    });
-    window.netlifyIdentity.on('error', err => showAuthMessage(err?.message || 'Errore di autenticazione.', true));
+function initAuthFlow(){
     refreshAuthState({ showMessages: false });
+    window.addEventListener('pageshow', () => {
+        refreshAuthState({ showMessages: false });
+    });
 }
-initNetlifyIdentity();
+initAuthFlow();
 </script>
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </body>
 </html>
