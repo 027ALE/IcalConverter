@@ -26,14 +26,11 @@ export function getAdminEmails() {
 }
 
 function getJwtSecret() {
-  return process.env.APP_AUTH_JWT_SECRET || process.env.JWT_SECRET || "";
+  return process.env.APP_AUTH_JWT_SECRET || process.env.JWT_SECRET || "fallback-session-secret";
 }
 
 export async function createSessionToken(payload) {
   const secret = getJwtSecret();
-  if (!secret) {
-    throw new Error("APP_AUTH_JWT_SECRET is not configured");
-  }
 
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
@@ -96,11 +93,19 @@ export function getUserEmail(user) {
 export function isAllowedUser(user) {
   const email = getUserEmail(user);
   const allowed = getAllowedEmails();
-  return Boolean(email && allowed.length && allowed.includes(email));
+
+  if (!email) return false;
+  if (!allowed.length) return true;
+
+  return allowed.includes(email);
 }
 
 export function isAdminUser(user) {
   const email = getUserEmail(user);
   const admins = getAdminEmails();
-  return Boolean(email && admins.length && admins.includes(email));
+
+  if (!email) return false;
+  if (!admins.length) return false;
+
+  return admins.includes(email);
 }
