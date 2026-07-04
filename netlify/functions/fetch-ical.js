@@ -1,4 +1,22 @@
-export default async (req) => {
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+function isAuthenticated(context) {
+  return Boolean(context?.clientContext?.user);
+}
+
+export default async (req, context) => {
+  if (!isAuthenticated(context)) {
+    return jsonResponse({ error: "Autenticazione richiesta." }, 401);
+  }
+
   const url = new URL(req.url).searchParams.get("url");
 
   if (!url) {

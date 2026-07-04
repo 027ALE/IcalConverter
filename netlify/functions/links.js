@@ -48,37 +48,23 @@ function jsonResponse(body, status = 200) {
   });
 }
 
-function getAdminPassword() {
-  return process.env.LINKS_ADMIN_PASSWORD || "";
+function isAuthenticated(context) {
+  return Boolean(context?.clientContext?.user);
 }
 
-function isAdminAuthorized(req) {
-  const expected = getAdminPassword();
-  if (!expected) return false;
-  const provided = req.headers.get("x-admin-password") || "";
-  return provided === expected;
-}
+export default async (req, context) => {
+  if (!isAuthenticated(context)) {
+    return jsonResponse({ error: "Autenticazione richiesta." }, 401);
+  }
 
-export default async (req) => {
   const store = getStoreInstance();
   const method = req.method;
 
-  // GET: lettura pubblica della lista. Se viene passato un header
-  // x-admin-password, viene usato anche per validare il login admin:
-  // password sbagliata => 401, password giusta o header assente => 200.
   if (method === "GET") {
-    const providedHeader = req.headers.get("x-admin-password");
-    if (providedHeader) {
-      if (!isAdminAuthorized(req)) {
-        return jsonResponse({ error: "Password errata." }, 401);
-      }
-    }
     const links = await readLinks(store);
     return jsonResponse({ links });
   }
 
-  // POST: aggiunta pubblica di un link (chiunque puo' salvare un link,
-  // nessuna password richiesta, coerente con il bottone "Salva link").
   if (method === "POST") {
     let body;
     try {
@@ -111,12 +97,7 @@ export default async (req) => {
     return jsonResponse({ links });
   }
 
-  // PUT: modifica di un link esistente, richiede password admin.
   if (method === "PUT") {
-    if (!isAdminAuthorized(req)) {
-      return jsonResponse({ error: "Password errata." }, 401);
-    }
-
     let body;
     try {
       body = await req.json();
@@ -147,12 +128,7 @@ export default async (req) => {
     return jsonResponse({ links });
   }
 
-  // DELETE: rimozione di un link, richiede password admin.
   if (method === "DELETE") {
-    if (!isAdminAuthorized(req)) {
-      return jsonResponse({ error: "Password errata." }, 401);
-    }
-
     const id = new URL(req.url).searchParams.get("id");
     if (!id) {
       return jsonResponse({ error: "ID mancante." }, 400);

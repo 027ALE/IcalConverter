@@ -9,6 +9,7 @@
 :root{--bg:#f5f2ec;--paper:#fffdfa;--ink:#211f1c;--muted:#8a8377;--line:#e7ddcd;--soft:#f1eade;--accent:#c96f42;--accent-ink:#fff;--ok:#eef8f0;--okb:#cbe8d1;--warn:#fff4e6;--warnb:#f0cf9c;--radius:20px;--radius-sm:14px;--shadow:0 10px 30px rgba(35,25,15,.08)}
 *{box-sizing:border-box;min-width:0} html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
+.auth-screen{min-height:70vh;display:grid;place-items:center;padding:24px 16px}.auth-card{max-width:560px;display:grid;gap:14px;padding:24px}.auth-card h2{margin:0;font-size:22px}.auth-card p{margin:0;color:var(--muted)}.hidden{display:none!important}
 .link-btn{color:#0a84ff;text-decoration:none;font-weight:600}
 .link-btn:hover{text-decoration:underline}
 .wrap{max-width:1120px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 24px}
@@ -85,7 +86,18 @@ a{color:var(--accent)}
 </head>
 <body>
 <div class="wrap">
-  <div class="toolbar">
+  <div id="authScreen" class="auth-screen">
+    <div class="card auth-card">
+      <h2>Accesso richiesto</h2>
+      <p>Per usare il convertitore e visualizzare i link salvati, accedi con il tuo account Google tramite Netlify Identity.</p>
+      <div class="row">
+        <button id="authSubmitBtn" type="button">Accedi con Google</button>
+      </div>
+      <div id="authMsg" class="status" style="display:none"></div>
+    </div>
+  </div>
+  <div id="appShell" class="hidden">
+    <div class="toolbar">
     <div class="title">
       <h1>Itinerario di viaggio</h1>
       <p>Carica un calendario .ics oppure incolla il link di un calendario condiviso per generare un programma pronto da salvare o condividere.</p>
@@ -112,11 +124,12 @@ a{color:var(--accent)}
   <div class="toolbar no-print" style="margin-top:14px">
     <div class="row" style="justify-content:space-between;align-items:center">
       <strong id="adminToggle" style="cursor:pointer;color:var(--accent)">Amministrazione link salvati ▾</strong>
+      <button id="logoutBtn" type="button" class="secondary" style="display:none">Esci</button>
     </div>
     <div id="adminPanel" hidden>
       <div id="adminLoginBox" class="row">
-        <input id="adminPasswordInput" type="password" placeholder="Password amministratore" autocomplete="current-password" />
-        <button id="adminLoginBtn" type="button">Accedi</button>
+        <span class="muted">Accedi con Google per gestire i link salvati.</span>
+        <button id="adminLoginBtn" type="button">Apri gestione link</button>
       </div>
       <div id="adminLoginMsg" class="status" style="display:none"></div>
 
@@ -139,6 +152,7 @@ a{color:var(--accent)}
   <div id="output" class="sheet">
     <div class="empty">Carica un file iCal per generare il programma.</div>
   </div>
+  </div>
 </div>
 <script>
 const fileInput = document.getElementById('fileInput');
@@ -155,7 +169,6 @@ const saveLinkBtn = document.getElementById('saveLinkBtn');
 const adminToggle = document.getElementById('adminToggle');
 const adminPanel = document.getElementById('adminPanel');
 const adminLoginBox = document.getElementById('adminLoginBox');
-const adminPasswordInput = document.getElementById('adminPasswordInput');
 const adminLoginBtn = document.getElementById('adminLoginBtn');
 const adminLoginMsg = document.getElementById('adminLoginMsg');
 const adminManageBox = document.getElementById('adminManageBox');
@@ -165,12 +178,23 @@ const adminNewLabel = document.getElementById('adminNewLabel');
 const adminAddBtn = document.getElementById('adminAddBtn');
 const adminManageMsg = document.getElementById('adminManageMsg');
 const adminLogoutBtn = document.getElementById('adminLogoutBtn');
-let adminPassword = null;
+const authScreen = document.getElementById('authScreen');
+const authSubmitBtn = document.getElementById('authSubmitBtn');
+const authMsg = document.getElementById('authMsg');
+const appShell = document.getElementById('appShell');
+const logoutBtn = document.getElementById('logoutBtn');
 let currentModel = null;
+let savedLinksCache = [];
 const TRAVEL_KEYWORDS =
     '(?:percorrenza|tempo\\s+di\\s+percorrenza|tempo\\s+viaggio|durata\\s+trasferimento)';
 function setStatus(msg, warn=false){statusEl.textContent=msg;statusEl.className='status'+(warn?' warn':'');statusEl.style.display='block';}
 function clearStatus(){statusEl.style.display='none';statusEl.textContent='';}
+function showAuthMessage(msg, warn=false){authMsg.textContent=msg;authMsg.className='status'+(warn?' warn':'');authMsg.style.display='block';}
+function clearAuthMessage(){authMsg.style.display='none';authMsg.textContent='';}
+function getCurrentIdentityUser(){return window.netlifyIdentity ? window.netlifyIdentity.currentUser() : null;}
+function getAuthHeaders(extra={}){const headers=Object.assign({},extra); const user=getCurrentIdentityUser(); const token=user?.token?.access_token || user?.token?.id_token || user?.token?.accessToken || ''; if(token){headers.Authorization=`Bearer ${token}`; headers['x-netlify-identity-token']=token;} return headers;}
+function ensureAuthenticated(){if(!getCurrentIdentityUser()){setStatus('Accedi prima di usare il servizio.', true); return false;} return true;}
+function setAuthState(isAuthenticated, user=null){ if(isAuthenticated && user){ authScreen.classList.add('hidden'); appShell.classList.remove('hidden'); logoutBtn.style.display='inline-flex'; } else { authScreen.classList.remove('hidden'); appShell.classList.add('hidden'); logoutBtn.style.display='none'; adminPanel.hidden=true; adminLoginBox.hidden=false; adminManageBox.hidden=true; clearStatus(); clearAuthMessage(); }}
 function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function unescapeICS(v=''){return v.replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\');}
 function unfold(text){return text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n[ \t]/g,'');}
@@ -717,20 +741,23 @@ function renderLinkSelect(links, selectedUrl=''){
     if(selectedUrl) linkSelect.value = selectedUrl;
 }
 async function loadSavedLinks(){
+    if(!ensureAuthenticated()) return;
     try{
-        const res = await fetch('/api/links');
+        const res = await fetch('/api/links', { headers: getAuthHeaders() });
         if(!res.ok) return;
         const data = await res.json();
-        renderLinkSelect(data.links || []);
+        savedLinksCache = data.links || [];
+        renderLinkSelect(savedLinksCache);
     }catch(err){
         console.error(err);
     }
 }
 async function saveLinkPublic(url, label){
+    if(!ensureAuthenticated()) return;
     try{
         const res = await fetch('/api/links', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ url, label }),
         });
         const data = await res.json().catch(() => ({}));
@@ -746,6 +773,7 @@ async function saveLinkPublic(url, label){
     }
 }
 async function fetchAndLoadLink(url){
+    if(!ensureAuthenticated()) return;
     if(!url){
         setStatus('Inserisci o seleziona un link.', true);
         return;
@@ -754,7 +782,7 @@ async function fetchAndLoadLink(url){
     searchLinkBtn.disabled = true;
     setStatus('Recupero calendario in corso…');
     try{
-        const res = await fetch(`/api/fetch-ical?url=${encodeURIComponent(url)}`);
+        const res = await fetch(`/api/fetch-ical?url=${encodeURIComponent(url)}`, { headers: getAuthHeaders() });
         if(!res.ok){
             let msg = `Errore HTTP ${res.status}`;
             try{
@@ -787,8 +815,7 @@ function clearAdminMsg(el){
     el.textContent = '';
 }
 async function adminFetch(url, options = {}){
-    const headers = Object.assign({}, options.headers, { 'x-admin-password': adminPassword || '' });
-    return fetch(url, Object.assign({}, options, { headers }));
+    return fetch(url, Object.assign({}, options, { headers: getAuthHeaders(options.headers) }));
 }
 function renderAdminLinks(links){
     adminLinksList.innerHTML = '';
@@ -1038,13 +1065,14 @@ function renderModel(model) {
     outputEl.innerHTML = cover + daysHtml;
 }
 function buildStaticDocument(){const styles=document.querySelector('style').textContent; const title=currentModel?.calName || 'Programma di viaggio'; return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${styles}</style></head><body><div class="wrap"><div class="toolbar"><div class="title"><h1>${esc(title)}</h1><p></p></div><div class="grid">${summaryEl.innerHTML}</div></div><div class="sheet">${outputEl.innerHTML}</div></div></body></html>`;}
-function saveStaticHTML(){ if(!currentModel) return; try{ const blob=new Blob([buildStaticDocument()],{type:'text/html;charset=utf-8'}); const a=document.createElement('a'); const url=URL.createObjectURL(blob); a.href=url; a.download=(currentModel.calName||'itinerario').replace(/[\\/:*?"<>|]+/g,'-')+'-finale.html'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); setStatus('Pagina finale salvata.'); }catch(err){ console.error(err); setStatus('Salvataggio non riuscito in questo browser.', true); }}
-function generatePdf(){ if(!currentModel) return; const w=window.open('','_blank'); if(!w){ setStatus('Popup bloccato: usa Safari e abilita la nuova finestra.', true); return; } const doc=buildStaticDocument(); w.document.open(); w.document.write(doc); w.document.close(); setTimeout(()=>{ try{ w.focus(); w.print(); } catch(e){ setStatus('Stampa non disponibile in questo browser.', true); } }, 600);} 
-fileInput.addEventListener('change', async e=>{const f=e.target.files && e.target.files[0]; if(!f) return; clearStatus(); linkSelect.value=''; linkUrlInput.value=''; try{ const txt=await f.text(); const model=parseICS(txt); renderModel(model); setStatus(`Importazione completata: ${model.events.length} eventi letti da ${f.name}.`); } catch(err){ console.error(err); setStatus('Errore durante la lettura del file iCal.', true); }});
+function saveStaticHTML(){ if(!currentModel || !ensureAuthenticated()) return; try{ const blob=new Blob([buildStaticDocument()],{type:'text/html;charset=utf-8'}); const a=document.createElement('a'); const url=URL.createObjectURL(blob); a.href=url; a.download=(currentModel.calName||'itinerario').replace(/[\\/:*?"<>|]+/g,'-')+'-finale.html'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); setStatus('Pagina finale salvata.'); }catch(err){ console.error(err); setStatus('Salvataggio non riuscito in questo browser.', true); }}
+function generatePdf(){ if(!currentModel || !ensureAuthenticated()) return; const w=window.open('','_blank'); if(!w){ setStatus('Popup bloccato: usa Safari e abilita la nuova finestra.', true); return; } const doc=buildStaticDocument(); w.document.open(); w.document.write(doc); w.document.close(); setTimeout(()=>{ try{ w.focus(); w.print(); } catch(e){ setStatus('Stampa non disponibile in questo browser.', true); } }, 600);} 
+fileInput.addEventListener('change', async e=>{const f=e.target.files && e.target.files[0]; if(!f || !ensureAuthenticated()) return; clearStatus(); linkSelect.value=''; linkUrlInput.value=''; try{ const txt=await f.text(); const model=parseICS(txt); renderModel(model); setStatus(`Importazione completata: ${model.events.length} eventi letti da ${f.name}.`); } catch(err){ console.error(err); setStatus('Errore durante la lettura del file iCal.', true); }});
 saveHtmlBtn.addEventListener('click', saveStaticHTML);
 pdfBtn.addEventListener('click', generatePdf);
 
 searchLinkBtn.addEventListener('click', () => {
+    if(!ensureAuthenticated()) return;
     const url = (linkUrlInput.value || linkSelect.value || '').trim();
     if(!url){
         setStatus('Inserisci un link webcal o https, oppure selezionane uno salvato.', true);
@@ -1055,6 +1083,7 @@ searchLinkBtn.addEventListener('click', () => {
     fetchAndLoadLink(url);
 });
 saveLinkBtn.addEventListener('click', () => {
+    if(!ensureAuthenticated()) return;
     const url = (linkUrlInput.value || linkSelect.value || '').trim();
     if(!url){
         setStatus('Inserisci un link da salvare.', true);
@@ -1064,6 +1093,7 @@ saveLinkBtn.addEventListener('click', () => {
     saveLinkPublic(url, label);
 });
 linkSelect.addEventListener('change', () => {
+    if(!ensureAuthenticated()) return;
     const url = linkSelect.value;
     if(url){
         fileInput.value = '';
@@ -1076,21 +1106,42 @@ linkSelect.addEventListener('change', () => {
 });
 
 adminToggle.addEventListener('click', () => {
+    if(!ensureAuthenticated()) return;
     adminPanel.hidden = !adminPanel.hidden;
 });
+authSubmitBtn.addEventListener('click', () => {
+    if(!window.netlifyIdentity){ showAuthMessage('Netlify Identity non è disponibile in questo contesto.', true); return; }
+    authSubmitBtn.disabled = true;
+    try{
+        window.netlifyIdentity.open('login');
+    }catch(err){
+        console.error(err);
+        showAuthMessage('Impossibile aprire il flusso di accesso.', true);
+    }finally{
+        setTimeout(() => { authSubmitBtn.disabled = false; }, 300);
+    }
+});
+logoutBtn.addEventListener('click', () => {
+    if(window.netlifyIdentity){
+        window.netlifyIdentity.logout();
+        showAuthMessage('Hai effettuato il logout.', false);
+    }
+});
 adminLoginBtn.addEventListener('click', async () => {
-    const password = adminPasswordInput.value;
-    if(!password) return;
+    if(!getCurrentIdentityUser()){
+        if(window.netlifyIdentity){
+            window.netlifyIdentity.open('login');
+        }
+        return;
+    }
     adminLoginBtn.disabled = true;
     try{
-        const res = await fetch('/api/links', { headers: { 'x-admin-password': password } });
+        const res = await fetch('/api/links', { headers: getAuthHeaders() });
         const data = await res.json().catch(() => ({}));
         if(!res.ok){
-            showAdminMsg(adminLoginMsg, data.error || 'Password errata.', 'error');
+            showAdminMsg(adminLoginMsg, data.error || 'Accesso non consentito.', 'error');
             return;
         }
-        adminPassword = password;
-        adminPasswordInput.value = '';
         clearAdminMsg(adminLoginMsg);
         adminLoginBox.hidden = true;
         adminManageBox.hidden = false;
@@ -1103,7 +1154,6 @@ adminLoginBtn.addEventListener('click', async () => {
     }
 });
 adminLogoutBtn.addEventListener('click', () => {
-    adminPassword = null;
     adminManageBox.hidden = true;
     adminLoginBox.hidden = false;
     clearAdminMsg(adminManageMsg);
@@ -1134,7 +1184,20 @@ adminAddBtn.addEventListener('click', async () => {
     }
 });
 
-loadSavedLinks();
+function initNetlifyIdentity(){
+    if(!window.netlifyIdentity){
+        window.setTimeout(initNetlifyIdentity, 100);
+        return;
+    }
+    window.netlifyIdentity.init();
+    window.netlifyIdentity.on('init', user => setAuthState(Boolean(user), user));
+    window.netlifyIdentity.on('login', user => { clearAuthMessage(); setAuthState(true, user); loadSavedLinks(); setStatus('Accesso eseguito con Google.'); });
+    window.netlifyIdentity.on('logout', () => { setAuthState(false); clearStatus(); showAuthMessage('Sei uscito. Accedi di nuovo per usare il servizio.', false); });
+    window.netlifyIdentity.on('error', err => showAuthMessage(err?.message || 'Errore di autenticazione.', true));
+    setAuthState(Boolean(window.netlifyIdentity.currentUser()), window.netlifyIdentity.currentUser());
+}
+initNetlifyIdentity();
 </script>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </body>
 </html>
