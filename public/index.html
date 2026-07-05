@@ -1,16 +1,23 @@
 <!doctype html>
 <html lang="it">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="theme-color" content="#f6f3ee" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ee">
 <title>Itinerario di viaggio</title>
 <style>
-:root{--bg:#f5f2ec;--paper:#fffdfa;--ink:#211f1c;--muted:#8a8377;--line:#e7ddcd;--soft:#f1eade;--accent:#c96f42;--accent-ink:#fff;--ok:#eef8f0;--okb:#cbe8d1;--warn:#fff4e6;--warnb:#f0cf9c;--radius:20px;--radius-sm:14px;--shadow:0 10px 30px rgba(35,25,15,.08)}
-*{box-sizing:border-box;min-width:0} html{-webkit-text-size-adjust:100%}
+:root{--bg:#f5f2ec;--paper:#fffdfa;--ink:#211f1c;--muted:#8a8377;--line:#e7ddcd;--soft:#f1eade;--accent:#c96f42;--accent-ink:#fff;--ok:#eef8f0;--okb:#ce8d1;--warn:#fff4e6;--warnb:#f0cf9c;--radius:20px;--radius-sm:14px;--shadow:0 10px 30px rgba(35,25,15,.08)}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
-.auth-screen{min-height:70vh;display:grid;place-items:center;padding:24px 16px}.auth-card{max-width:560px;display:grid;gap:14px;padding:24px}.auth-card h2{margin:0;font-size:22px}.auth-card p{margin:0;color:var(--muted)}.hidden{display:none!important}
-.link-btn{color:#0a84ff;text-decoration:none;font-weight:600}
+.auth-screen{min-height:70vh;display:grid;place-items:center;padding:24px 16px}
+.auth-card{max-width:560px;display:grid;gap:14px;padding:24px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.auth-card h2{margin:0;font-size:22px}
+.auth-card p{margin:0;color:var(--muted)}
+.auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:6px 0}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.hidden{display:none!important}
+.link-btn{color:#0a84ff;text-decoration:none;font-weight:600;cursor:pointer;background:none;border:none;padding:0;font-size:inherit}
 .link-btn:hover{text-decoration:underline}
 .wrap{max-width:1120px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 24px}
 .toolbar,.card,.day{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);width:100%;max-width:100%}
@@ -23,7 +30,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,
 .title p{font-size:14px;line-height:1.45;margin:0}
 .section-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin:4px 0 -4px}
 input[type=file]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;width:100%;font-size:15px;min-height:46px}
-select,input[type=url],input[type=text],input[type=password]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;flex:1;min-width:180px;font:inherit;font-size:16px;color:var(--ink);min-height:46px;-webkit-appearance:none;appearance:none}
+select,input[type=url],input[type=text],input[type=password],input[type=email]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;flex:1;min-width:180px;font:inherit;font-size:16px;color:var(--ink);min-height:46px;-webkit-appearance:none;appearance:none}
 select:focus,input:focus{outline:none;border-color:var(--accent)}
 button{border:0;background:var(--accent);color:var(--accent-ink);padding:12px 18px;border-radius:var(--radius-sm);font-weight:700;font-size:15px;cursor:pointer;min-height:46px;transition:transform .08s ease,opacity .15s ease}
 button:active{transform:scale(.97)}
@@ -34,12 +41,18 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .link-admin-row .row-buttons{display:flex;gap:8px}
 .link-admin-row .row-buttons button{flex:1;padding:9px 10px;font-size:13px;min-height:40px}
 .link-admin-row label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.role-badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.role-badge.admin{background:#f6ede0;color:#7a4a1f}
+.role-badge.intermediate{background:#eaf3ff;color:#1f5a9c}
+.role-badge.standard{background:#f1eade;color:#6b6455}
 .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));width:100%;max-width:100%}
 .stat{padding:14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;overflow-wrap:anywhere}
 .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .stat .v{font-size:20px;margin-top:4px;overflow-wrap:anywhere;font-weight:700}
 .status{padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--okb);background:var(--ok);display:none;overflow-wrap:anywhere;font-size:14px}
 .status.warn{background:var(--warn);border-color:var(--warnb)}
+.status.error{background:#fbeceb;border-color:#f1c9c5}
+.status.success{background:var(--ok);border-color:var(--okb)}
 .sheet{margin-top:18px;display:grid;gap:16px;width:100%;max-width:100%}
 .cover{padding:22px;overflow:hidden}
 .cover h2{margin:0 0 8px;font-size:20px}
@@ -61,99 +74,134 @@ tr:last-child td{border-bottom:0}
 a{color:var(--accent)}
 .empty{padding:32px 20px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:var(--radius);background:var(--paper)}
 @media (max-width:760px){
-  .wrap{padding:12px 12px 24px}
-  .toolbar{padding:16px;border-radius:18px}
-  .row{flex-direction:column;align-items:stretch}
-  .row>*{width:100%}
-  select,input[type=url],input[type=text],input[type=password],input[type=file],button{width:100%}
-  .time{width:auto}
-  .place-col{width:auto}
-  th,td{padding:10px 10px;font-size:13px}
-  .day-head{padding:14px}
-  .day-head h2{font-size:17px}
-  .title h1{font-size:20px}
+.wrap{padding:12px 12px 24px}
+.toolbar{padding:16px;border-radius:18px}
+.row{flex-direction:column;align-items:stretch}
+.row>*{width:100%}
+select,input,button{width:100%}
+.time{width:auto}
+.place-col{width:auto}
+th,td{padding:10px 10px;font-size:13px}
+.day-head{padding:14px}
+.day-head h2{font-size:17px}
+.title h1{font-size:20px}
 }
 @media print{
-  body{background:#fff}
-  .no-print{display:none!important}
-  .wrap{max-width:none;padding:0}
-  .toolbar{box-shadow:none;border:none;padding:0 0 12px 0}
-  .day,.card,.cover{border-radius:0}
-  .sheet{margin-top:10px}
-  @page{size:A4;margin:11mm}
+body{background:#fff}
+.no-print{display:none!important}
+.wrap{max-width:none;padding:0}
+.toolbar{box-shadow:none;border:none;padding:0 0 12px 0}
+.day,.card,.cover{border-radius:0}
+.sheet{margin-top:10px}
+@page{size:A4;margin:11mm}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
+
   <div id="authScreen" class="auth-screen">
     <div class="card auth-card">
       <h2>Accesso richiesto</h2>
-      <p>Per usare il convertitore e visualizzare i link salvati, accedi con il tuo account Google.</p>
-      <div class="row">
-        <button id="authSubmitBtn" type="button">Accedi con Google</button>
+      <p>Accedi con la tua email e password oppure con il tuo account Google per usare il convertitore e visualizzare i link salvati.</p>
+
+      <div class="row" style="flex-direction:column;align-items:stretch">
+        <input id="authEmailInput" type="email" placeholder="Email" autocomplete="username">
+        <input id="authPasswordInput" type="password" placeholder="Password" autocomplete="current-password">
+        <button id="authLoginBtn" type="button">Accedi con email e password</button>
       </div>
+
+      <div class="auth-divider">oppure</div>
+
+      <div class="row">
+        <button id="authGoogleBtn" type="button" class="secondary">Accedi con Google</button>
+      </div>
+
       <div id="authMsg" class="status" style="display:none"></div>
     </div>
   </div>
+
   <div id="appShell" class="hidden">
     <div class="toolbar">
-    <div class="title">
-      <h1>Itinerario di viaggio</h1>
-      <p>Carica un calendario .ics oppure incolla il link di un calendario condiviso per generare un programma pronto da salvare o condividere.</p>
-    </div>
-    <div class="section-label no-print">Da un link webcal o iCal</div>
-    <div class="row no-print">
-      <select id="linkSelect" aria-label="Link salvati">
-        <option value="">— Link salvati —</option>
-      </select>
-      <input id="linkUrlInput" type="url" placeholder="Incolla link webcal:// o https://…" />
-      <input id="linkLabelInput" type="text" placeholder="Nome (opzionale, per salvare)" />
-      <button id="searchLinkBtn" type="button">Cerca link</button>
-      <button id="saveLinkBtn" type="button" class="secondary">Salva link</button>
-    </div>
-    <div class="section-label no-print">Oppure da un file</div>
-    <div class="row no-print">
-      <input id="fileInput" type="file" accept=".ics,text/calendar,.ical,.ifb,.txt" />
-      <button id="saveHtmlBtn" disabled>Esporta pagina finale</button>
-      <button id="pdfBtn" disabled>Genera PDF</button>
-    </div>
-    <div id="status" class="status"></div>
-    <div id="summary" class="grid"></div>
-  </div>
-  <div class="toolbar no-print" style="margin-top:14px">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <strong id="adminToggle" style="cursor:pointer;color:var(--accent)">Amministrazione link salvati ▾</strong>
-      <button id="logoutBtn" type="button" class="secondary" style="display:none">Esci</button>
-    </div>
-    <div id="adminPanel" hidden>
-      <div id="adminLoginBox" class="row">
-        <span class="muted">Accedi con Google per gestire i link salvati.</span>
-        <button id="adminLoginBtn" type="button">Apri gestione link</button>
+      <div class="title">
+        <h1>Itinerario di viaggio</h1>
+        <p>Carica un calendario .ics oppure incolla il link di un calendario condiviso per generare un programma pronto da salvare o condividere.</p>
       </div>
-      <div id="adminLoginMsg" class="status" style="display:none"></div>
 
-      <div id="adminManageBox" hidden>
-        <div id="adminLinksList" style="display:grid;gap:10px;margin-top:10px"></div>
+      <div class="section-label no-print">Da un link webcal o iCal</div>
+      <div class="row no-print">
+        <select id="linkSelect" aria-label="Link salvati">
+          <option value="">Link salvati</option>
+        </select>
+        <input id="linkUrlInput" type="url" placeholder="Incolla link webcal o https">
+        <input id="linkLabelInput" type="text" placeholder="Nome (opzionale, per salvare)">
+        <button id="searchLinkBtn" type="button">Cerca link</button>
+        <button id="saveLinkBtn" type="button" class="secondary">Salva link</button>
+      </div>
 
-        <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px">Aggiungi nuovo link</h3>
-        <div class="row">
-          <input id="adminNewUrl" type="text" placeholder="webcal:// o https://…" />
-          <input id="adminNewLabel" type="text" placeholder="Etichetta (opzionale)" />
-          <button id="adminAddBtn" type="button">Aggiungi link</button>
+      <div class="section-label no-print">Oppure da un file</div>
+      <div class="row no-print">
+        <input id="fileInput" type="file" accept=".ics,text/calendar,.ical,.ifb,.txt">
+        <button id="saveHtmlBtn" disabled>Esporta pagina finale</button>
+        <button id="pdfBtn" disabled>Genera PDF</button>
+      </div>
+
+      <div id="status" class="status"></div>
+      <div id="summary" class="grid"></div>
+    </div>
+
+    <div class="toolbar no-print" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="row" style="align-items:center;gap:8px">
+          <strong id="adminToggle" style="cursor:pointer;color:var(--accent)">Amministrazione</strong>
+          <span id="roleBadge" class="role-badge hidden"></span>
         </div>
-        <div id="adminManageMsg" class="status" style="display:none"></div>
-        <div class="row" style="margin-top:10px">
-          <button id="adminLogoutBtn" type="button" class="secondary">Esci</button>
+        <button id="logoutBtn" type="button" class="secondary" style="display:none">Esci</button>
+      </div>
+
+      <div id="adminPanel" hidden>
+
+        <div id="linksSection">
+          <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px">Link salvati</h3>
+          <div id="adminLinksList" style="display:grid;gap:10px"></div>
+
+          <div id="editLinksBox" hidden>
+            <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px">Aggiungi nuovo link</h3>
+            <div class="row">
+              <input id="adminNewUrl" type="text" placeholder="webcal:// o https://">
+              <input id="adminNewLabel" type="text" placeholder="Etichetta (opzionale)">
+              <button id="adminAddBtn" type="button">Aggiungi link</button>
+            </div>
+          </div>
+          <div id="adminManageMsg" class="status" style="display:none"></div>
+        </div>
+
+        <div id="usersSection" hidden>
+          <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:24px 0 8px">Gestione utenti</h3>
+          <div id="usersList" style="display:grid;gap:10px"></div>
+          <div class="row" style="margin-top:10px">
+            <input id="newUserEmail" type="email" placeholder="Email nuovo utente">
+            <select id="newUserRole">
+              <option value="standard">Standard</option>
+              <option value="intermediate">Intermedio</option>
+            </select>
+            <button id="addUserBtn" type="button">Crea utente e invita</button>
+          </div>
+          <div id="usersMsg" class="status" style="display:none"></div>
+        </div>
+
+        <div class="row" style="margin-top:14px">
+          <button id="adminCloseBtn" type="button" class="secondary">Chiudi pannello</button>
         </div>
       </div>
     </div>
-  </div>
-  <div id="output" class="sheet">
-    <div class="empty">Carica un file iCal per generare il programma.</div>
-  </div>
+
+    <div id="output" class="sheet">
+      <div class="empty">Carica un file iCal per generare il programma.</div>
+    </div>
   </div>
 </div>
+
 <script>
 const fileInput = document.getElementById('fileInput');
 const summaryEl = document.getElementById('summary');
@@ -166,1167 +214,567 @@ const linkUrlInput = document.getElementById('linkUrlInput');
 const linkLabelInput = document.getElementById('linkLabelInput');
 const searchLinkBtn = document.getElementById('searchLinkBtn');
 const saveLinkBtn = document.getElementById('saveLinkBtn');
+
 const adminToggle = document.getElementById('adminToggle');
+const roleBadge = document.getElementById('roleBadge');
 const adminPanel = document.getElementById('adminPanel');
-const adminLoginBox = document.getElementById('adminLoginBox');
-const adminLoginBtn = document.getElementById('adminLoginBtn');
-const adminLoginMsg = document.getElementById('adminLoginMsg');
-const adminManageBox = document.getElementById('adminManageBox');
 const adminLinksList = document.getElementById('adminLinksList');
+const editLinksBox = document.getElementById('editLinksBox');
 const adminNewUrl = document.getElementById('adminNewUrl');
 const adminNewLabel = document.getElementById('adminNewLabel');
 const adminAddBtn = document.getElementById('adminAddBtn');
 const adminManageMsg = document.getElementById('adminManageMsg');
-const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+const adminCloseBtn = document.getElementById('adminCloseBtn');
+
+const usersSection = document.getElementById('usersSection');
+const usersList = document.getElementById('usersList');
+const newUserEmail = document.getElementById('newUserEmail');
+const newUserRole = document.getElementById('newUserRole');
+const addUserBtn = document.getElementById('addUserBtn');
+const usersMsg = document.getElementById('usersMsg');
+
 const authScreen = document.getElementById('authScreen');
-const authSubmitBtn = document.getElementById('authSubmitBtn');
+const authEmailInput = document.getElementById('authEmailInput');
+const authPasswordInput = document.getElementById('authPasswordInput');
+const authLoginBtn = document.getElementById('authLoginBtn');
+const authGoogleBtn = document.getElementById('authGoogleBtn');
 const authMsg = document.getElementById('authMsg');
 const appShell = document.getElementById('appShell');
 const logoutBtn = document.getElementById('logoutBtn');
+
 let currentModel = null;
-let currentAuth = null;
-const TRAVEL_KEYWORDS =
-    '(?:percorrenza|tempo\\s+di\\s+percorrenza|tempo\\s+viaggio|durata\\s+trasferimento)';
-function setStatus(msg, warn=false){statusEl.textContent=msg;statusEl.className='status'+(warn?' warn':'');statusEl.style.display='block';}
-function clearStatus(){statusEl.style.display='none';statusEl.textContent='';}
-function showAuthMessage(msg, warn=false){authMsg.textContent=msg;authMsg.className='status'+(warn?' warn':'');authMsg.style.display='block';}
-function clearAuthMessage(){authMsg.style.display='none';authMsg.textContent='';}
-function getAuthHeaders(extra={}){return Object.assign({}, extra);}
-async function completeGoogleLogin(user, options={showMessages:true}){
-    const email = user?.email?.trim().toLowerCase() || user?.user?.email?.trim().toLowerCase() || '';
-    try{
-        const res = await fetch('/api/auth', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, provider: 'google' }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if(!res.ok){
-            currentAuth = null;
-            setAuthState(false);
-            if(options.showMessages) showAuthMessage(data.error || 'Accesso non autorizzato.', true);
-            return null;
-        }
-        currentAuth = data;
-        setAuthState(true, data.user || { email });
-        if(options.showMessages) clearAuthMessage();
-        return data;
-    }catch(err){
-        console.error(err);
-        currentAuth = null;
-        setAuthState(false);
-        if(options.showMessages) showAuthMessage('Impossibile completare l\'accesso.', true);
-        return null;
-    }
+let currentSession = null; // { email, role }
+
+const TRAVEL_KEYWORDS = "(?:percorrenza|tempo di percorrenza|tempo di viaggio|durata trasferimento)";
+
+function setStatus(msg, warn=false){
+  statusEl.textContent = msg;
+  statusEl.className = 'status' + (warn ? ' warn' : ' success');
+  statusEl.style.display = 'block';
 }
-async function refreshAuthState(options={showMessages:false}){
-    try{
-        const identityUser = window.netlifyIdentity?.currentUser?.();
-        if(identityUser?.email){
-            currentAuth = {
-                ok: true,
-                user: { email: identityUser.email },
-                isAllowed: true,
-                isAdmin: false,
-            };
-            setAuthState(true, currentAuth.user);
-            return currentAuth;
-        }
-
-        const res = await fetch('/api/auth', { credentials: 'same-origin' });
-        const data = await res.json().catch(() => ({}));
-        if(res.ok && data.ok){
-            currentAuth = data;
-            setAuthState(true, data.user || null);
-            return data;
-        }
-
-        const loginRes = await fetch('/api/auth', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider: 'google' }),
-        });
-        const loginData = await loginRes.json().catch(() => ({}));
-        if(loginRes.ok && loginData.ok){
-            currentAuth = loginData;
-            setAuthState(true, loginData.user || null);
-            return loginData;
-        }
-
-        currentAuth = null;
-        setAuthState(false);
-        if(options.showMessages && data.error) showAuthMessage(data.error, true);
-        return null;
-    }catch(err){
-        console.error(err);
-        currentAuth = null;
-        setAuthState(false);
-        if(options.showMessages) showAuthMessage('Impossibile verificare l\'accesso.', true);
-        return null;
-    }
+function clearStatus(){ statusEl.style.display='none'; statusEl.textContent=''; }
+function showAuthMessage(msg, warn=false){
+  authMsg.textContent = msg;
+  authMsg.className = 'status' + (warn ? ' warn' : ' success');
+  authMsg.style.display = 'block';
 }
-async function ensureAuthenticated(){
-    if(currentAuth) return currentAuth;
-    const auth = await refreshAuthState({ showMessages: true });
-    if(!auth){ setStatus('Accedi prima di usare il servizio.', true); return null; }
-    return auth;
+function clearAuthMessage(){ authMsg.style.display='none'; authMsg.textContent=''; }
+
+async function fetchJSON(url, options={}){
+  const res = await fetch(url, Object.assign({ credentials: 'include' }, options));
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
 }
-function setAuthState(isAuthenticated, user=null){
-    const isAdmin = Boolean(currentAuth?.isAdmin);
-    if(isAuthenticated && (user || currentAuth)){
-        authScreen.classList.add('hidden');
-        appShell.classList.remove('hidden');
-        logoutBtn.style.display='inline-flex';
-        adminToggle.style.display = isAdmin ? 'inline-block' : 'none';
-        adminPanel.hidden = !isAdmin;
-        if(!isAdmin){ adminLoginBox.hidden = false; adminManageBox.hidden = true; clearAdminMsg(adminLoginMsg); }
-    } else {
-        authScreen.classList.remove('hidden');
-        appShell.classList.add('hidden');
-        logoutBtn.style.display='none';
-        adminToggle.style.display='none';
-        adminPanel.hidden=true;
-        adminLoginBox.hidden=false;
-        adminManageBox.hidden=true;
-        clearStatus();
-        clearAuthMessage();
+
+async function completeServerSession(showMessages=true){
+  try {
+    const { ok, data } = await fetchJSON('/api/auth', { method: 'POST', headers: {'Content-Type':'application/json'} });
+    if (!ok) {
+      currentSession = null;
+      setAuthState(false);
+      if (showMessages) showAuthMessage(data.error || 'Accesso non autorizzato.', true);
+      return null;
     }
-}
-function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function unescapeICS(v=''){return v.replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\');}
-function unfold(text){return text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n[ \t]/g,'');}
-function parseDate(v){
-
-    if(!v) return null;
-
-    // Evento UTC
-    const utc = v.match(
-        /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?Z$/
-    );
-
-    if(utc){
-        return new Date(Date.UTC(
-            +utc[1],
-            +utc[2]-1,
-            +utc[3],
-            +utc[4],
-            +utc[5],
-            +(utc[6] || 0)
-        ));
-    }
-
-    // Evento con orario locale
-    const local = v.match(
-        /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?$/
-    );
-
-    if(local){
-        return new Date(
-            +local[1],
-            +local[2]-1,
-            +local[3],
-            +local[4],
-            +local[5],
-            +(local[6] || 0)
-        );
-    }
-
-    // Evento "all day"
-    const allDay = v.match(
-        /^(\d{4})(\d{2})(\d{2})$/
-    );
-
-    if(allDay){
-        return new Date(
-            +allDay[1],
-            +allDay[2]-1,
-            +allDay[3],
-            0,
-            0,
-            0
-        );
-    }
-
+    currentSession = { email: data.user.email, role: data.role };
+    setAuthState(true);
+    if (showMessages) clearAuthMessage();
+    return currentSession;
+  } catch (err) {
+    console.error(err);
+    currentSession = null;
+    setAuthState(false);
+    if (showMessages) showAuthMessage('Impossibile completare l\'accesso.', true);
     return null;
+  }
 }
 
-
-function fmtDate(d){return new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(d);}
-function fmtShortDate(d){return new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d);}
-function fmtTime(d){return new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit'}).format(d);}
-function cleanGeoLabel(v=''){return v.replace(/^"|"$/g,'').replace(/::geo:.+$/,'').replace(/:geo:.+$/,'').trim();}
-function splitProp(line){const idx=line.indexOf(':'); if(idx<0) return null; return {left:line.slice(0,idx), value:line.slice(idx+1)};}
-function parseTravelAndDuration(line = '') {
-
-    const extract = (...keys) => {
-
-        for (const key of keys) {
-
-            const re = new RegExp(
-                `(?:^|;)${key}=("(?:[^"]*)"|[^;]*)`,
-                'i'
-            );
-
-            const m = line.match(re);
-
-            if (!m) continue;
-
-            const value = m[1]
-                .replace(/^"|"$/g, '')
-                .trim();
-
-            if (value) {
-                return value;
-            }
-        }
-
-        return '';
-    };
-
-    const fromTitle = cleanGeoLabel(
-        unescapeICS(
-            extract(
-                'X-TITLE',
-                'TITLE'
-            )
-        )
-    );
-
-    const fromAddress = cleanGeoLabel(
-        unescapeICS(
-            extract(
-                'X-ADDRESS',
-                'ADDRESS'
-            )
-        )
-    );
-
-    let durationRaw = unescapeICS(
-        extract(
-            'TRAVEL-DURATION',
-            'X-APPLE-TRAVEL-DURATION',
-            'DURATION'
-        )
-    ).trim();
-
-    // fallback: prova a trovare una durata direttamente nella riga
-    if (!durationRaw) {
-
-        const fallback = line.match(
-            /\b(?:PT\d+H\d*M?|PT\d+M|PT\d+H)\b/i
-        );
-
-
-        if (fallback) {
-            durationRaw = fallback[0];
-        }
+async function refreshAuthState(showMessages=false){
+  try {
+    const { ok, data } = await fetchJSON('/api/auth');
+    if (ok && data.ok) {
+      currentSession = { email: data.user.email, role: data.role };
+      setAuthState(true);
+      return currentSession;
     }
-
-    return {
-        fromTitle,
-        fromAddress,
-        durationRaw,
-        duration: normalizeDuration(durationRaw)
-    };
+    currentSession = null;
+    setAuthState(false);
+    return null;
+  } catch (err) {
+    console.error(err);
+    currentSession = null;
+    setAuthState(false);
+    return null;
+  }
 }
 
-function normalizeDuration(raw = '') {
-
-    const v = (raw || '').trim();
-
-    if (!v) return '';
-
-    // PT1H20M
-    // PT1H
-    // PT45M
-    if (/^PT/i.test(v)) {
-
-        const h = parseInt(
-            (v.match(/(\d+)H/i) || [])[1] || 0,
-            10
-        );
-
-        const min = parseInt(
-            (v.match(/(\d+)M/i) || [])[1] || 0,
-            10
-        );
-
-        if (h && min) {
-            return `${h}h ${min}min`;
-        }
-
-        if (h) {
-            return `${h}h`;
-        }
-
-        if (min) {
-            return `${min} min`;
-        }
-
-        return '';
-    }
-
-    // numero puro = minuti
-    // 45 → 45 min
-    // 90 → 1h 30min
-    if (/^\d+$/.test(v)) {
-
-        const totalMinutes = parseInt(v, 10);
-
-        if (totalMinutes < 60) {
-            return `${totalMinutes} min`;
-        }
-
-        const h = Math.floor(totalMinutes / 60);
-        const min = totalMinutes % 60;
-
-        return min
-            ? `${h}h ${min}min`
-            : `${h}h`;
-    }
-
-    let m;
-
-    // 1 ora e 30 minuti
-    m = v.match(
-        /^(\d+)\s*or[ae]\b\s*(?:e\s*)?(\d+)\s*(?:m|min|minuti)?$/i
-    );
-
-    if (m) {
-
-        const h = parseInt(m[1], 10);
-        const min = parseInt(m[2], 10);
-
-        return min > 0
-            ? `${h}h ${min}min`
-            : `${h}h`;
-    }
-
-    // 1h30
-    // 1h30m
-    // 1 h 30
-    // 1 h 30 min
-    m = v.match(
-        /^(\d+)\s*h\s*(\d+)\s*(?:m|min|minuti)?$/i
-    );
-
-    if (m) {
-
-        const h = parseInt(m[1], 10);
-        const min = parseInt(m[2], 10);
-
-        return min > 0
-            ? `${h}h ${min}min`
-            : `${h}h`;
-    }
-
-    // 1 ora
-    // 2 ore
-    m = v.match(
-        /^(\d+)\s*or[ae]\b$/i
-    );
-
-    if (m) {
-        return `${parseInt(m[1], 10)}h`;
-    }
-
-    // 1h
-    // 1 h
-    m = v.match(
-        /^(\d+)\s*h$/i
-    );
-
-    if (m) {
-        return `${parseInt(m[1], 10)}h`;
-    }
-
-    // 45m
-    // 45 min
-    // 45 minuti
-    m = v.match(
-        /^(\d+)\s*(?:m|min|minuti)$/i
-    );
-
-    if (m) {
-        return `${parseInt(m[1], 10)} min`;
-    }
-
-    return v;
+async function ensureAuthenticated(){
+  if (currentSession) return currentSession;
+  const s = await refreshAuthState(true);
+  if (!s) { setStatus('Accedi prima di usare il servizio.', true); return null; }
+  return s;
 }
 
-function findManualTravelTime(obj) {
-
-    const text = (obj.description || '').trim();
-
-    if (!text) return '';
-
-    const re = new RegExp(
-
-        `${TRAVEL_KEYWORDS}\\s*[:\\-]?\\s*` +
-
-        '(' +
-
-            // 1 ora e 30 minuti
-            '\\d+\\s*or[ae]\\b\\s*(?:e\\s*)?\\d+\\s*(?:m|min|minuti)?' +
-
-            '|' +
-
-            // 1h30 / 1 h 30 min
-            '\\d+\\s*h\\s*\\d+\\s*(?:m|min|minuti)?' +
-
-            '|' +
-
-            // 2 ore / 1 ora
-            '\\d+\\s*or[ae]\\b' +
-
-            '|' +
-
-            // 1h
-            '\\d+\\s*h\\b' +
-
-            '|' +
-
-            // 45 min
-            '\\d+\\s*(?:m|min|minuti)\\b' +
-
-        ')',
-
-        'i'
-    );
-
-    const match = text.match(re);
-
-    if (!match) {
-        return '';
+function setAuthState(isAuthenticated){
+  const role = currentSession?.role || null;
+  if (isAuthenticated) {
+    authScreen.classList.add('hidden');
+    appShell.classList.remove('hidden');
+    logoutBtn.style.display = 'inline-flex';
+    if (role) {
+      roleBadge.textContent = role === 'admin' ? 'Admin' : role === 'intermediate' ? 'Intermedio' : 'Standard';
+      roleBadge.className = 'role-badge ' + role;
+      roleBadge.classList.remove('hidden');
     }
-
-    const value = match[1].trim();
-
-    return normalizeDuration(value);
+    adminToggle.style.display = (role === 'admin' || role === 'intermediate') ? 'inline-block' : 'none';
+    editLinksBox.hidden = !(role === 'admin' || role === 'intermediate');
+    usersSection.hidden = role !== 'admin';
+    adminPanel.hidden = true;
+  } else {
+    authScreen.classList.remove('hidden');
+    appShell.classList.add('hidden');
+    logoutBtn.style.display = 'none';
+    roleBadge.classList.add('hidden');
+    adminToggle.style.display = 'none';
+    adminPanel.hidden = true;
+  }
 }
 
-function removeTravelTimeFromDescription(text = '') {
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function unescapeICS(v){ return (v||'').replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\'); }
+function unfold(text){ return text.replace(/\r\n[ \t]/g,'').replace(/\n[ \t]/g,'').replace(/\r\n/g,'\n'); }
 
-    if (!text) return '';
+function parseDate(v){
+  if (!v) return null;
+  let m = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+  if (m) return new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]));
+  m = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
+  m = v.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], 0, 0, 0);
+  return null;
+}
+function fmtDate(d){ return new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(d); }
+function fmtShortDate(d){ return new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d); }
+function fmtTime(d){ return new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit'}).format(d); }
 
-    const travelRegex = new RegExp(
+function splitProp(line){
+  const idx = line.indexOf(':');
+  if (idx < 0) return null;
+  return { left: line.slice(0, idx), value: line.slice(idx + 1) };
+}
 
-        `${TRAVEL_KEYWORDS}\\s*[:\\-]?\\s*` +
+function normalizeDuration(raw){
+  const v = (raw||'').trim();
+  if (!v) return '';
+  if (/^PT/i.test(v)) {
+    const h = parseInt((v.match(/(\d+)H/i)||[])[1] || 0, 10);
+    const min = parseInt((v.match(/(\d+)M/i)||[])[1] || 0, 10);
+    if (h && min) return h+'h '+min+'min';
+    if (h) return h+'h';
+    if (min) return min+' min';
+  }
+  if (/^\d+$/.test(v)) {
+    const totalMinutes = parseInt(v, 10);
+    if (totalMinutes < 60) return totalMinutes+' min';
+    const h = Math.floor(totalMinutes/60), min = totalMinutes%60;
+    return min ? (h+'h '+min+'min') : (h+'h');
+  }
+  let m = v.match(/(\d+)\s*ora?e?\s*(?:e\s*)?(\d+)?\s*min(?:uti)?/i);
+  if (m) { const h=parseInt(m[1],10), min=parseInt(m[2]||0,10); return min ? (h+'h '+min+'min') : (h+'h'); }
+  m = v.match(/(\d+)\s*h\s*(\d+)?/i);
+  if (m) { const h=parseInt(m[1],10), min=parseInt(m[2]||0,10); return min ? (h+'h '+min+'min') : (h+'h'); }
+  m = v.match(/(\d+)\s*ora?e?/i);
+  if (m) return parseInt(m[1],10)+'h';
+  m = v.match(/(\d+)\s*min(?:uti)?/i);
+  if (m) return parseInt(m[1],10)+' min';
+  return v;
+}
 
-        '(?:' +
-
-        // 1 ora e 30 minuti
-        '\\d+\\s*or[ae]\\b\\s*(?:e\\s*)?\\d+\\s*(?:m|min|minuti)' +
-
-        '|' +
-
-        // 1h30, 1h30m, 1 h 30 min
-        '\\d+\\s*h\\s*\\d+\\s*(?:m|min|minuti)?' +
-
-        '|' +
-
-        // 2 ore
-        '\\d+\\s*or[ae]\\b' +
-
-        '|' +
-
-        // 1h
-        '\\d+\\s*h\\b' +
-
-        '|' +
-
-        // 90 min
-        '\\d+\\s*(?:m|min|minuti)' +
-
-        ')',
-
-        'i'
-    );
-
-    const cleanedLines = text
-        .split('\n')
-        .map(line => {
-
-            let cleaned = line.replace(travelRegex, '');
-
-            cleaned = cleaned
-                .replace(/^[\s\-–—,:;]+/, '')
-                .replace(/[\s\-–—,:;]+$/, '')
-                .replace(/\s{2,}/g, ' ')
-                .trim();
-
-            if (/^in$/i.test(cleaned)) {
-                return '';
-            }
-
-            return cleaned;
-
-        })
-        .filter(Boolean);
-
-    return cleanedLines.join('\n');
+function findManualTravelTime(obj){
+  const text = (obj.description||'').trim();
+  if (!text) return '';
+  const re = new RegExp(TRAVEL_KEYWORDS + '\\s*[:\\-]?\\s*([\\d\\w\\s]+)', 'i');
+  const match = text.match(re);
+  if (!match) return '';
+  return normalizeDuration(match[1].trim());
+}
+function removeTravelTimeFromDescription(text){
+  if (!text) return text;
+  const travelRegex = new RegExp(TRAVEL_KEYWORDS + '.*', 'gi');
+  return text.split('\n').map(line => line.replace(travelRegex,'').trim()).filter(Boolean).join('\n');
 }
 
 function parseICS(raw){
-    const text = unfold(raw);
-    const lines = text.split('\n');
-
-    let calName = 'Programma di viaggio';
-    const events = [];
-    let current = null;
-
-    for(const rawLine of lines){
-        const line = rawLine.trimEnd();
-
-        if(line === 'BEGIN:VEVENT'){
-            current = [];
-            continue;
-        }
-
-        if(line === 'END:VEVENT'){
-            if(current) events.push(current);
-            current = null;
-            continue;
-        }
-
-        if(!current){
-            if(line.startsWith('X-WR-CALNAME:')){
-                calName =
-                    unescapeICS(
-                        line.slice('X-WR-CALNAME:'.length)
-                    ).trim() || calName;
-            }
-            continue;
-        }
-
-        current.push(line);
+  const text = unfold(raw);
+  const lines = text.split('\n');
+  let calName = 'Programma di viaggio';
+  const events = [];
+  let current = null;
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (line === 'BEGIN:VEVENT') { current = []; continue; }
+    if (line === 'END:VEVENT') { if (current) events.push(current); current = null; continue; }
+    if (!current) { if (line.startsWith('X-WR-CALNAME')) calName = unescapeICS(line.slice(line.indexOf(':')+1)).trim() || calName; continue; }
+    current.push(line);
+  }
+  const parsed = events.map(evLines => {
+    const obj = { summary:'Senza titolo', location:'', url:'', description:'', uid:'', start:null, end:null, travelTime:'', isAllDay:false, isAllDayEnd:false };
+    for (const line of evLines) {
+      const prop = splitProp(line);
+      if (!prop) continue;
+      const name = prop.left.split(';')[0];
+      const val = unescapeICS(prop.value.trim());
+      if (name === 'SUMMARY') obj.summary = val || obj.summary;
+      else if (name === 'LOCATION') obj.location = val;
+      else if (name === 'URL') obj.url = val;
+      else if (name === 'DESCRIPTION') obj.description = val;
+      else if (name === 'UID') obj.uid = val;
+      else if (name === 'DTSTART') { obj.start = parseDate(val); obj.isAllDay = /^\d{8}$/.test(val); }
+      else if (name === 'DTEND') { obj.end = parseDate(val); obj.isAllDayEnd = /^\d{8}$/.test(val); }
+      else if (/TRAVEL-DURATION|X-APPLE-TRAVEL-DURATION/i.test(name)) obj.travelTime = normalizeDuration(val);
     }
-
-    const parsed = events.map(lines => {
-
-        const obj = {
-            summary: 'Senza titolo',
-            location: '',
-            url: '',
-            description: '',
-            uid: '',
-            start: null,
-            end: null,
-            travel: null,
-            travelTime: '',
-            isAllDay: false,
-            isAllDayEnd: false
-        };
-
-
-        for(const line of lines){
-
-            const prop = splitProp(line);
-            if(!prop) continue;
-
-            const name = prop.left.split(';')[0];
-            const val = unescapeICS(prop.value.trim());
-
-            if(name === 'SUMMARY'){
-                obj.summary = val || obj.summary;
-            }
-            else if(name === 'LOCATION'){
-                obj.location = val;
-            }
-            else if(name === 'URL'){
-                obj.url = val;
-            }
-            else if(name === 'DESCRIPTION'){
-                obj.description = val;
-            }
-            else if(name === 'UID'){
-                obj.uid = val;
-            }
-            else if(name === 'DTSTART'){
-                obj.start = parseDate(val);
-                obj.isAllDay = /^\d{8}$/.test(val);
-            }
-            else if(name === 'DTEND'){
-                obj.end = parseDate(val);
-                obj.isAllDayEnd = /^\d{8}$/.test(val);
-            }
-            else if(name === 'X-APPLE-TRAVEL-START'){
-                obj.travel = parseTravelAndDuration(line);
-            }
-            else if(/TRAVEL-DURATION|X-APPLE-TRAVEL-DURATION/i.test(name)){
-                obj.travelTime = normalizeDuration(val);
-            }
-        }
-
-        /* AGGIUNGI QUI */
-
-        if (
-            obj.isAllDay &&
-            obj.isAllDayEnd &&
-            obj.end
-        ) {
-            obj.end = new Date(obj.end);
-            obj.end.setDate(obj.end.getDate() - 1);
-        }
-
-        obj.dayKey = obj.start
-            ? `${obj.start.getFullYear()}-${String(obj.start.getMonth()+1).padStart(2,'0')}-${String(obj.start.getDate()).padStart(2,'0')}`
-            : '';
-
-        obj.dayKey = obj.start
-            ? `${obj.start.getFullYear()}-${String(obj.start.getMonth()+1).padStart(2,'0')}-${String(obj.start.getDate()).padStart(2,'0')}`
-            : '';
-
-        obj.placeLabel = (obj.location || obj.summary)
-            .split('\n')[0]
-            .trim();
-
-        // Recupera eventuale percorrenza presente nel DESCRIPTION
-        const travelFromDescription = findManualTravelTime(obj);
-
-        // Recupera eventuale percorrenza Apple
-        const travelFromApple =
-            obj.travel?.duration || '';
-
-
-        // Priorità:
-        // 1. TRAVEL-DURATION
-        // 2. X-APPLE-TRAVEL-START
-        // 3. DESCRIPTION
-        obj.travelTime =
-            obj.travelTime ||
-            travelFromApple ||
-            travelFromDescription ||
-            '';
-
-        // Se è stata trovata una percorrenza,
-        // rimuove eventuali righe duplicate dalla descrizione
-        if(obj.travelTime){
-            obj.description =
-                removeTravelTimeFromDescription(obj.description);
-        }
-
-        return obj;
-
-    }).filter(
-        e => e.start instanceof Date &&
-             !isNaN(e.start)
-    );
-
-    parsed.sort((a,b) => a.start - b.start);
-
-    return {
-        calName,
-        events: parsed
-    };
+    if (obj.isAllDay && obj.isAllDayEnd && obj.end) { obj.end = new Date(obj.end); obj.end.setDate(obj.end.getDate()-1); }
+    obj.dayKey = obj.start ? (obj.start.getFullYear()+'-'+String(obj.start.getMonth()+1).padStart(2,'0')+'-'+String(obj.start.getDate()).padStart(2,'0')) : '';
+    obj.placeLabel = obj.location || obj.summary.split(',')[0].trim();
+    const travelFromDescription = findManualTravelTime(obj);
+    obj.travelTime = obj.travelTime || travelFromDescription;
+    if (obj.travelTime) obj.description = removeTravelTimeFromDescription(obj.description);
+    return obj;
+  }).filter(e => e.start instanceof Date && !isNaN(e.start));
+  parsed.sort((a,b) => a.start - b.start);
+  return { calName, events: parsed };
 }
-function groupByDay(events){const map=new Map(); for(const ev of events){ if(!map.has(ev.dayKey)) map.set(ev.dayKey,[]); map.get(ev.dayKey).push(ev);} return [...map.entries()].map(([key,items])=>({key,items}));}
-function buildSummary(model){const {calName,events}=model; summaryEl.innerHTML=''; if(!events.length) return; const first=events[0].start; const lastEnd=events.reduce((m,e)=>e.end&&e.end>m?e.end:m,events[0].end||events[0].start); const days=new Set(events.map(e=>e.dayKey)).size; const stops=new Set(events.map(e=>e.placeLabel).filter(Boolean)).size; const travelTimes=events.filter(e=>e.travelTime).length; const cards=[['Titolo',calName],['Periodo',`${fmtShortDate(first)} - ${fmtShortDate(lastEnd)}`],['Giorni',String(days)],['Eventi',String(events.length)],['Tappe',String(stops)],['Percorrenze',String(travelTimes)]]; summaryEl.innerHTML=cards.map(([k,v])=>`<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('');}
+function groupByDay(events){
+  const map = new Map();
+  for (const ev of events) { if (!map.has(ev.dayKey)) map.set(ev.dayKey, []); map.get(ev.dayKey).push(ev); }
+  return [...map.entries()].map(([key, items]) => ({ key, items }));
+}
+function buildSummary(model){
+  const { calName, events } = model;
+  summaryEl.innerHTML = '';
+  if (!events.length) return;
+  const first = events[0].start;
+  const lastEnd = events.reduce((m,e) => (e.end && e.end > m) ? e.end : m, events[0].end || events[0].start);
+  const days = new Set(events.map(e => e.dayKey)).size;
+  const stops = new Set(events.map(e => e.placeLabel).filter(Boolean)).size;
+  const travelTimes = events.filter(e => e.travelTime).length;
+  const cards = { 'Titolo': calName, 'Periodo': fmtShortDate(first)+' - '+fmtShortDate(lastEnd), 'Giorni': String(days), 'Eventi': String(events.length), 'Tappe': String(stops), 'Percorrenze': String(travelTimes) };
+  summaryEl.innerHTML = Object.entries(cards).map(([k,v]) => '<div class="stat"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>').join('');
+}
 function labelForUrl(url){
-    try{
-        const u = new URL(url.replace(/^webcal:\/\//i, 'https://'));
-        return u.hostname + (u.pathname !== '/' ? u.pathname : '');
-    }catch{
-        return url;
-    }
+  try { const u = new URL(url.replace(/^webcal:/i,'https:')); return u.hostname + (u.pathname !== '/' ? u.pathname : ''); }
+  catch { return url; }
 }
-function renderLinkSelect(links, selectedUrl=''){
-    linkSelect.innerHTML = '<option value="">— Link salvati —</option>' +
-        links.slice().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0)).map(l =>
-            `<option value="${esc(l.url)}">${esc(l.label ? l.label : labelForUrl(l.url))}</option>`
-        ).join('');
-    if(selectedUrl) linkSelect.value = selectedUrl;
+function renderLinkSelect(links, selectedUrl){
+  linkSelect.innerHTML = '<option value="">Link salvati</option>' +
+    (links||[]).slice().sort((a,b) => (b.savedAt||0)-(a.savedAt||0)).map(l =>
+      '<option value="'+esc(l.url)+'">'+esc(l.label || labelForUrl(l.url))+'</option>').join('');
+  if (selectedUrl) linkSelect.value = selectedUrl;
 }
 async function loadSavedLinks(){
-    if(!await ensureAuthenticated()) return;
-    try{
-        const res = await fetch('/api/links', { credentials: 'same-origin', headers: getAuthHeaders() });
-        if(!res.ok) return;
-        const data = await res.json();
-        renderLinkSelect(data.links || []);
-    }catch(err){
-        console.error(err);
-    }
+  if (!await ensureAuthenticated()) return;
+  const { ok, data } = await fetchJSON('/api/links');
+  if (!ok) return;
+  renderLinkSelect(data.links);
 }
 async function saveLinkPublic(url, label){
-    if(!await ensureAuthenticated()) return;
-    try{
-        const res = await fetch('/api/links', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ url, label }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if(!res.ok){
-            setStatus(data.error || 'Impossibile salvare il link.', true);
-            return;
-        }
-        renderLinkSelect(data.links || [], url);
-        setStatus('Link salvato.');
-    }catch(err){
-        console.error(err);
-        setStatus('Errore di rete durante il salvataggio del link.', true);
-    }
+  if (!await ensureAuthenticated()) return;
+  const { ok, data } = await fetchJSON('/api/links', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url, label}) });
+  if (!ok) { setStatus(data.error || 'Impossibile salvare il link.', true); return; }
+  renderLinkSelect(data.links, url);
+  setStatus('Link salvato.');
 }
 async function fetchAndLoadLink(url){
-    if(!await ensureAuthenticated()) return;
-    if(!url){
-        setStatus('Inserisci o seleziona un link.', true);
-        return;
+  if (!await ensureAuthenticated()) return;
+  if (!url) { setStatus('Inserisci o seleziona un link.', true); return; }
+  clearStatus();
+  searchLinkBtn.disabled = true;
+  setStatus('Recupero calendario in corso...');
+  try {
+    const res = await fetch('/api/fetch-ical?url=' + encodeURIComponent(url), { credentials: 'include' });
+    if (!res.ok) {
+      let msg = 'Errore HTTP ' + res.status;
+      try { const errBody = await res.json(); if (errBody?.error) msg = errBody.error; } catch {}
+      setStatus(msg, true);
+      return;
     }
-    clearStatus();
-    searchLinkBtn.disabled = true;
-    setStatus('Recupero calendario in corso…');
-    try{
-        const res = await fetch(`/api/fetch-ical?url=${encodeURIComponent(url)}`, { credentials: 'same-origin', headers: getAuthHeaders() });
-        if(!res.ok){
-            let msg = `Errore HTTP ${res.status}`;
-            try{
-                const errBody = await res.json();
-                if(errBody && errBody.error) msg = errBody.error;
-            }catch{}
-            setStatus(msg, true);
-            return;
-        }
-        const text = await res.text();
-        const model = parseICS(text);
-        renderModel(model);
-        setStatus(`Calendario caricato: ${model.events.length} eventi trovati.`);
-    }catch(err){
-        console.error(err);
-        setStatus('Errore di rete durante il recupero del calendario.', true);
-    }finally{
-        searchLinkBtn.disabled = false;
-    }
+    const text = await res.text();
+    const model = parseICS(text);
+    renderModel(model);
+    setStatus('Calendario caricato: ' + model.events.length + ' eventi trovati.');
+  } catch (err) {
+    console.error(err);
+    setStatus('Errore di rete durante il recupero del calendario.', true);
+  } finally {
+    searchLinkBtn.disabled = false;
+  }
 }
 
-// --- Amministrazione link salvati ---
 function showAdminMsg(el, text, type){
-    el.textContent = text;
-    el.className = 'status' + (type === 'error' ? ' warn' : '');
-    el.style.display = 'block';
+  el.textContent = text;
+  el.className = 'status ' + (type === 'error' ? 'warn' : 'success');
+  el.style.display = 'block';
 }
-function clearAdminMsg(el){
-    el.style.display = 'none';
-    el.textContent = '';
-}
-async function adminFetch(url, options = {}){
-    return fetch(url, Object.assign({}, options, { credentials: 'same-origin' }));
-}
+function clearAdminMsg(el){ el.style.display = 'none'; el.textContent = ''; }
+
 function renderAdminLinks(links){
-    adminLinksList.innerHTML = '';
-    if(!links.length){
-        adminLinksList.innerHTML = '<div class="small">Nessun link salvato.</div>';
-        return;
-    }
-    links.slice().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0)).forEach(link => {
-        const row = document.createElement('div');
-        row.className = 'link-admin-row';
-        row.innerHTML = `
-            <label>URL</label>
-            <input type="text" class="admin-url-input" value="${esc(link.url)}" />
-            <label>Etichetta</label>
-            <input type="text" class="admin-label-input" value="${esc(link.label || '')}" />
-            <div class="row-buttons">
-                <button type="button" class="secondary admin-save-btn">Salva</button>
-                <button type="button" class="danger admin-delete-btn">Elimina</button>
-            </div>
-        `;
-        const urlInput = row.querySelector('.admin-url-input');
-        const labelInput = row.querySelector('.admin-label-input');
-        row.querySelector('.admin-save-btn').addEventListener('click', () => editSavedLink(link.id, urlInput.value, labelInput.value));
-        row.querySelector('.admin-delete-btn').addEventListener('click', () => deleteSavedLink(link.id));
-        adminLinksList.appendChild(row);
-    });
+  const canEdit = currentSession && (currentSession.role === 'admin' || currentSession.role === 'intermediate');
+  const canDelete = currentSession && currentSession.role === 'admin';
+  adminLinksList.innerHTML = '';
+  if (!links.length) { adminLinksList.innerHTML = '<div class="small">Nessun link salvato.</div>'; return; }
+  links.slice().sort((a,b) => (b.savedAt||0)-(a.savedAt||0)).forEach(link => {
+    const row = document.createElement('div');
+    row.className = 'link-admin-row';
+    row.innerHTML =
+      '<label>URL</label><input type="text" class="admin-url-input" value="'+esc(link.url)+'" '+(canEdit?'':'disabled')+'>' +
+      '<label>Etichetta</label><input type="text" class="admin-label-input" value="'+esc(link.label||'')+'" '+(canEdit?'':'disabled')+'>' +
+      '<div class="row-buttons">' +
+        (canEdit ? '<button type="button" class="secondary admin-save-btn">Salva</button>' : '') +
+        (canDelete ? '<button type="button" class="danger admin-delete-btn">Elimina</button>' : '') +
+      '</div>';
+    const urlInput = row.querySelector('.admin-url-input');
+    const labelInput = row.querySelector('.admin-label-input');
+    const saveBtn = row.querySelector('.admin-save-btn');
+    const delBtn = row.querySelector('.admin-delete-btn');
+    if (saveBtn) saveBtn.addEventListener('click', () => editSavedLink(link.id, urlInput.value, labelInput.value));
+    if (delBtn) delBtn.addEventListener('click', () => deleteSavedLink(link.id));
+    adminLinksList.appendChild(row);
+  });
 }
 async function editSavedLink(id, url, label){
-    try{
-        const res = await adminFetch('/api/links', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, url, label }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if(!res.ok){
-            showAdminMsg(adminManageMsg, data.error || 'Impossibile modificare il link.', 'error');
-            return;
-        }
-        renderAdminLinks(data.links || []);
-        renderLinkSelect(data.links || []);
-        showAdminMsg(adminManageMsg, 'Link aggiornato.', 'success');
-    }catch(err){
-        console.error(err);
-        showAdminMsg(adminManageMsg, 'Errore di rete durante la modifica.', 'error');
-    }
+  const { ok, data } = await fetchJSON('/api/links', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id,url,label}) });
+  if (!ok) { showAdminMsg(adminManageMsg, data.error || 'Impossibile modificare il link.', 'error'); return; }
+  renderAdminLinks(data.links);
+  renderLinkSelect(data.links);
+  showAdminMsg(adminManageMsg, 'Link aggiornato.', 'success');
 }
 async function deleteSavedLink(id){
-    if(!confirm('Eliminare questo link?')) return;
-    try{
-        const res = await adminFetch(`/api/links?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-        const data = await res.json().catch(() => ({}));
-        if(!res.ok){
-            showAdminMsg(adminManageMsg, data.error || 'Impossibile eliminare il link.', 'error');
-            return;
-        }
-        renderAdminLinks(data.links || []);
-        renderLinkSelect(data.links || []);
-        showAdminMsg(adminManageMsg, 'Link eliminato.', 'success');
-    }catch(err){
-        console.error(err);
-        showAdminMsg(adminManageMsg, 'Errore di rete durante l\'eliminazione.', 'error');
-    }
+  if (!confirm('Eliminare questo link?')) return;
+  const { ok, data } = await fetchJSON('/api/links?id=' + encodeURIComponent(id), { method:'DELETE' });
+  if (!ok) { showAdminMsg(adminManageMsg, data.error || 'Impossibile eliminare il link.', 'error'); return; }
+  renderAdminLinks(data.links);
+  renderLinkSelect(data.links);
+  showAdminMsg(adminManageMsg, 'Link eliminato.', 'success');
 }
+
+async function loadUsers(){
+  if (!currentSession || currentSession.role !== 'admin') return;
+  const { ok, data } = await fetchJSON('/api/users');
+  if (!ok) { showAdminMsg(usersMsg, data.error || 'Impossibile caricare gli utenti.', 'error'); return; }
+  renderUsers(data.admin, data.users);
+}
+function renderUsers(adminEmail, users){
+  usersList.innerHTML = '<div class="link-admin-row"><label>Amministratore</label><div>'+esc(adminEmail)+'</div></div>';
+  const entries = Object.entries(users || {});
+  if (!entries.length) { usersList.innerHTML += '<div class="small">Nessun utente aggiuntivo creato.</div>'; return; }
+  entries.forEach(([email, info]) => {
+    const row = document.createElement('div');
+    row.className = 'link-admin-row';
+    row.innerHTML =
+      '<label>Email</label><div>'+esc(email)+'</div>' +
+      '<label>Ruolo</label><div><span class="role-badge '+esc(info.role)+'">'+esc(info.role)+'</span></div>' +
+      '<div class="row-buttons"><button type="button" class="danger remove-user-btn">Rimuovi</button></div>';
+    row.querySelector('.remove-user-btn').addEventListener('click', () => removeUser(email));
+    usersList.appendChild(row);
+  });
+}
+async function removeUser(email){
+  if (!confirm('Rimuovere l\'accesso per ' + email + '?')) return;
+  const { ok, data } = await fetchJSON('/api/users?email=' + encodeURIComponent(email), { method:'DELETE' });
+  if (!ok) { showAdminMsg(usersMsg, data.error || 'Impossibile rimuovere l\'utente.', 'error'); return; }
+  showAdminMsg(usersMsg, 'Utente rimosso.', 'success');
+  loadUsers();
+}
+
 function resetToEmptyState(){
-    currentModel = null;
-    summaryEl.innerHTML = '';
-    outputEl.innerHTML = '<div class="empty">Carica un file iCal per generare il programma.</div>';
-    saveHtmlBtn.disabled = true;
-    pdfBtn.disabled = true;
-    clearStatus();
+  currentModel = null;
+  summaryEl.innerHTML = '';
+  outputEl.innerHTML = '<div class="empty">Carica un file iCal per generare il programma.</div>';
+  saveHtmlBtn.disabled = true;
+  pdfBtn.disabled = true;
+  clearStatus();
 }
-function renderModel(model) {
-
-    currentModel = model;
-
-    buildSummary(model);
-
-    const hasEvents = model.events.length > 0;
-
-    saveHtmlBtn.disabled = !hasEvents;
-    pdfBtn.disabled = !hasEvents;
-
-    if (!hasEvents) {
-
-        outputEl.innerHTML = `
-            <div class="empty">
-                Nessun evento valido trovato.
-            </div>
-        `;
-
-        return;
-    }
-
-    const groups = groupByDay(model.events);
-
-    const firstEvent = model.events[0];
-
-    const lastEvent =
-        model.events[model.events.length - 1];
-
-    const tripStart = firstEvent.start;
-
-    const tripEnd =
-        lastEvent.end instanceof Date
-            ? lastEvent.end
-            : lastEvent.start;
-
-    const cover = `
-        <section class="cover card">
-            <h2>${esc(model.calName)}</h2>
-
-            <div class="muted">
-                Dal ${esc(fmtDate(tripStart))}
-                al ${esc(fmtDate(tripEnd))}
-            </div>
-        </section>
-    `;
-
-    const daysHtml = groups.map(({ items }) => {
-
-        const dayDate = items[0].start;
-
-        const rows = items.map(ev => {
-
-            const timeLabel =
-                ev.isAllDay
-                    ? 'Intera giornata'
-                    : esc(fmtTime(ev.start));
-
-            const endLabel =
-                ev.end && !ev.isAllDay
-                    ? `
-                        <div class="small">
-                            fino ${esc(fmtTime(ev.end))}
-                        </div>
-                    `
-                    : '';
-
-            const travelLabel =
-                ev.travelTime
-                    ? `
-                        <div class="travel-meta">
-                            Trasferimento:
-                            ${esc(ev.travelTime)}
-                            da tappa precedente
-                        </div>
-                    `
-                    : '';
-
-            const description =
-                ev.description
-                    ? `
-                        <div class="small">
-                            ${esc(ev.description)}
-                        </div>
-                    `
-                    : '';
-
-            const location =
-                ev.location
-                    ? esc(ev.location).replace(/\n/g, '<br>')
-                    : '<span class="small">—</span>';
-
-            return `
-                <tr>
-
-                    <td class="time">
-                        ${timeLabel}
-                        ${endLabel}
-                    </td>
-
-                    <td>
-
-                        <div class="ev-title">
-                            ${esc(ev.summary)}
-                        </div>
-
-                        ${travelLabel}
-
-                        ${description}
-
-                        ${ev.url
-                        ? `
-                            <div class="small">
-                                ${esc(ev.url)}
-                            </div>
-                        `
-                        : ''
-                    }
-                    </td>
-
-                    <td>
-                        ${location}
-                    </td>
-
-                </tr>
-            `;
-        }).join('');
-
-        return `
-            <section class="day">
-
-                <div class="day-head">
-
-                    <h2>
-                        ${esc(fmtDate(dayDate))}
-                    </h2>
-
-                    <div class="meta">
-                        ${items.length} attività
-                    </div>
-
-                </div>
-
-                <div class="table-wrap">
-
-                    <table>
-
-                        <colgroup>
-                            <col style="width:110px">
-                            <col>
-                            <col class="place-col">
-                        </colgroup>
-
-                        <thead>
-                            <tr>
-                                <th>Orario</th>
-                                <th>Attività</th>
-                                <th class="place-col">Luogo</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            ${rows}
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </section>
-        `;
-
+function renderModel(model){
+  currentModel = model;
+  buildSummary(model);
+  const hasEvents = model.events.length > 0;
+  saveHtmlBtn.disabled = !hasEvents;
+  pdfBtn.disabled = !hasEvents;
+  if (!hasEvents) { outputEl.innerHTML = '<div class="empty">Nessun evento valido trovato.</div>'; return; }
+  const groups = groupByDay(model.events);
+  const firstEvent = model.events[0];
+  const lastEvent = model.events[model.events.length - 1];
+  const tripStart = firstEvent.start;
+  const tripEnd = (lastEvent.end instanceof Date) ? lastEvent.end : lastEvent.start;
+  const cover = '<section class="cover card"><h2>'+esc(model.calName)+'</h2><div class="muted">Dal '+esc(fmtDate(tripStart))+' al '+esc(fmtDate(tripEnd))+'</div></section>';
+  const daysHtml = groups.map(({items}) => {
+    const dayDate = items[0].start;
+    const rows = items.map(ev => {
+      const timeLabel = ev.isAllDay ? 'Intera giornata' : esc(fmtTime(ev.start));
+      const endLabel = (ev.end && !ev.isAllDay) ? '<div class="small">fino '+esc(fmtTime(ev.end))+'</div>' : '';
+      const travelLabel = ev.travelTime ? '<div class="travel-meta">Trasferimento '+esc(ev.travelTime)+' da tappa precedente</div>' : '';
+      const description = ev.description ? '<div class="small">'+esc(ev.description)+'</div>' : '';
+      const location = ev.location ? esc(ev.location).replace(/\n/g,'<br>') : '<span class="small"></span>';
+      return '<tr><td class="time">'+timeLabel+endLabel+'</td>' +
+        '<td><div class="ev-title">'+esc(ev.summary)+'</div>'+travelLabel+description+(ev.url?'<div class="small">'+esc(ev.url)+'</div>':'')+'</td>' +
+        '<td class="place-col">'+location+'</td></tr>';
     }).join('');
-
-    outputEl.innerHTML = cover + daysHtml;
+    return '<section class="day"><div class="day-head"><h2>'+esc(fmtDate(dayDate))+'</h2><div class="meta">'+items.length+' attività</div></div>' +
+      '<div class="table-wrap"><table><colgroup><col style="width:110px"><col><col class="place-col"></colgroup>' +
+      '<thead><tr><th>Orario</th><th>Attività</th><th class="place-col">Luogo</th></tr></thead><tbody>'+rows+'</tbody></table></div></section>';
+  }).join('');
+  outputEl.innerHTML = cover + daysHtml;
 }
-function buildStaticDocument(){const styles=document.querySelector('style').textContent; const title=currentModel?.calName || 'Programma di viaggio'; return `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${styles}</style></head><body><div class="wrap"><div class="toolbar"><div class="title"><h1>${esc(title)}</h1><p></p></div><div class="grid">${summaryEl.innerHTML}</div></div><div class="sheet">${outputEl.innerHTML}</div></div></body></html>`;}
-function saveStaticHTML(){ if(!currentModel) return; try{ const blob=new Blob([buildStaticDocument()],{type:'text/html;charset=utf-8'}); const a=document.createElement('a'); const url=URL.createObjectURL(blob); a.href=url; a.download=(currentModel.calName||'itinerario').replace(/[\\/:*?"<>|]+/g,'-')+'-finale.html'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500); setStatus('Pagina finale salvata.'); }catch(err){ console.error(err); setStatus('Salvataggio non riuscito in questo browser.', true); }}
-function generatePdf(){ if(!currentModel) return; const w=window.open('','_blank'); if(!w){ setStatus('Popup bloccato: usa Safari e abilita la nuova finestra.', true); return; } const doc=buildStaticDocument(); w.document.open(); w.document.write(doc); w.document.close(); setTimeout(()=>{ try{ w.focus(); w.print(); } catch(e){ setStatus('Stampa non disponibile in questo browser.', true); } }, 600);} 
-fileInput.addEventListener('change', async e=>{const f=e.target.files && e.target.files[0]; if(!f) return; if(!await ensureAuthenticated()) return; clearStatus(); linkSelect.value=''; linkUrlInput.value=''; try{ const txt=await f.text(); const model=parseICS(txt); renderModel(model); setStatus(`Importazione completata: ${model.events.length} eventi letti da ${f.name}.`); } catch(err){ console.error(err); setStatus('Errore durante la lettura del file iCal.', true); }});
+function buildStaticDocument(){
+  const styles = document.querySelector('style').textContent;
+  const title = currentModel?.calName || 'Programma di viaggio';
+  return '<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>'+esc(title)+'</title><style>'+styles+'</style></head><body><div class="wrap">' +
+    '<div class="toolbar"><div class="title"><h1>'+esc(title)+'</h1></div></div>' +
+    '<div class="grid">'+summaryEl.innerHTML+'</div>' +
+    '<div class="sheet">'+outputEl.innerHTML+'</div></div></body></html>';
+}
+function saveStaticHTML(){
+  if (!currentModel) return;
+  try {
+    const blob = new Blob([buildStaticDocument()], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = (currentModel.calName||'itinerario').replace(/[^a-z0-9]+/gi,'-') + '-finale.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    setStatus('Pagina finale salvata.');
+  } catch (err) { console.error(err); setStatus('Salvataggio non riuscito in questo browser.', true); }
+}
+function generatePdf(){
+  if (!currentModel) return;
+  const w = window.open('', '_blank');
+  if (!w) { setStatus('Popup bloccato: usa Safari e abilita la nuova finestra.', true); return; }
+  const doc = buildStaticDocument();
+  w.document.open(); w.document.write(doc); w.document.close();
+  setTimeout(() => { try { w.focus(); w.print(); } catch(e) { setStatus('Stampa non disponibile in questo browser.', true); } }, 600);
+}
+
+fileInput.addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (!await ensureAuthenticated()) return;
+  clearStatus();
+  linkSelect.value = ''; linkUrlInput.value = '';
+  try {
+    const txt = await f.text();
+    const model = parseICS(txt);
+    renderModel(model);
+    setStatus('Importazione completata: ' + model.events.length + ' eventi letti da ' + f.name + '.');
+  } catch (err) { console.error(err); setStatus('Errore durante la lettura del file iCal.', true); }
+});
 saveHtmlBtn.addEventListener('click', saveStaticHTML);
 pdfBtn.addEventListener('click', generatePdf);
-
 searchLinkBtn.addEventListener('click', async () => {
-    if(!await ensureAuthenticated()) return;
-    const url = (linkUrlInput.value || linkSelect.value || '').trim();
-    if(!url){
-        setStatus('Inserisci un link webcal o https, oppure selezionane uno salvato.', true);
-        return;
-    }
-    fileInput.value = '';
-    if(linkSelect.value !== url) linkSelect.value = '';
-    fetchAndLoadLink(url);
+  if (!await ensureAuthenticated()) return;
+  const url = (linkUrlInput.value || linkSelect.value).trim();
+  if (!url) { setStatus('Inserisci un link webcal o https, oppure selezionane uno salvato.', true); return; }
+  fileInput.value = '';
+  if (linkSelect.value && linkSelect.value !== url) linkSelect.value = url;
+  fetchAndLoadLink(url);
 });
 saveLinkBtn.addEventListener('click', async () => {
-    if(!await ensureAuthenticated()) return;
-    const url = (linkUrlInput.value || linkSelect.value || '').trim();
-    if(!url){
-        setStatus('Inserisci un link da salvare.', true);
-        return;
-    }
-    const label = linkLabelInput.value.trim();
-    saveLinkPublic(url, label);
+  if (!await ensureAuthenticated()) return;
+  const url = (linkUrlInput.value || linkSelect.value).trim();
+  if (!url) { setStatus('Inserisci un link da salvare.', true); return; }
+  const label = linkLabelInput.value.trim();
+  saveLinkPublic(url, label);
 });
 linkSelect.addEventListener('change', async () => {
-    if(!await ensureAuthenticated()) return;
-    const url = linkSelect.value;
-    if(url){
-        fileInput.value = '';
-        linkUrlInput.value = url;
-        fetchAndLoadLink(url);
-    }else{
-        linkUrlInput.value = '';
-        resetToEmptyState();
-    }
+  if (!await ensureAuthenticated()) return;
+  const url = linkSelect.value;
+  if (url) { fileInput.value=''; linkUrlInput.value = url; fetchAndLoadLink(url); }
+  else { linkUrlInput.value=''; resetToEmptyState(); }
 });
 
 adminToggle.addEventListener('click', async () => {
-    if(!await ensureAuthenticated()) return;
-    adminPanel.hidden = !adminPanel.hidden;
+  const s = await ensureAuthenticated();
+  if (!s) return;
+  adminPanel.hidden = !adminPanel.hidden;
+  if (!adminPanel.hidden) {
+    const { ok, data } = await fetchJSON('/api/links');
+    if (ok) renderAdminLinks(data.links);
+    if (s.role === 'admin') loadUsers();
+  }
 });
-authSubmitBtn.addEventListener('click', async () => {
-    authSubmitBtn.disabled = true;
-    showAuthMessage('Reindirizzamento al login Google…', false);
-
-    const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
-    const authUrl = `/.netlify/identity/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
-
-    try{
-        window.location.assign(authUrl);
-    }catch(err){
-        console.error(err);
-        showAuthMessage('Impossibile avviare il login Google. Controlla la configurazione di Netlify Identity.', true);
-    }finally{
-        setTimeout(() => { authSubmitBtn.disabled = false; }, 1200);
-    }
-});
-logoutBtn.addEventListener('click', async () => {
-    try{
-        await fetch('/api/auth', { method: 'DELETE', credentials: 'same-origin' });
-    }catch(err){
-        console.error(err);
-    }
-    currentAuth = null;
-    if(window.netlifyIdentity){
-        window.netlifyIdentity.logout();
-    }
-    setAuthState(false);
-    showAuthMessage('Hai effettuato il logout.', false);
-});
-adminLoginBtn.addEventListener('click', async () => {
-    const auth = await ensureAuthenticated();
-    if(!auth){ return; }
-    if(!auth.isAdmin){
-        showAdminMsg(adminLoginMsg, 'Solo gli amministratori possono gestire i link salvati.', 'error');
-        return;
-    }
-    adminLoginBtn.disabled = true;
-    try{
-        const res = await fetch('/api/links', { credentials: 'same-origin' });
-        const data = await res.json().catch(() => ({}));
-        if(!res.ok){
-            showAdminMsg(adminLoginMsg, data.error || 'Accesso non consentito.', 'error');
-            return;
-        }
-        clearAdminMsg(adminLoginMsg);
-        adminLoginBox.hidden = true;
-        adminManageBox.hidden = false;
-        renderAdminLinks(data.links || []);
-    }catch(err){
-        console.error(err);
-        showAdminMsg(adminLoginMsg, 'Errore di rete durante l\'accesso.', 'error');
-    }finally{
-        adminLoginBtn.disabled = false;
-    }
-});
-adminLogoutBtn.addEventListener('click', () => {
-    adminManageBox.hidden = true;
-    adminLoginBox.hidden = false;
-    clearAdminMsg(adminManageMsg);
-});
+adminCloseBtn.addEventListener('click', () => { adminPanel.hidden = true; });
 adminAddBtn.addEventListener('click', async () => {
-    const url = adminNewUrl.value.trim();
-    const label = adminNewLabel.value.trim();
-    if(!url) return;
-    try{
-        const res = await adminFetch('/api/links', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url, label }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if(!res.ok){
-            showAdminMsg(adminManageMsg, data.error || 'Impossibile aggiungere il link.', 'error');
-            return;
-        }
-        adminNewUrl.value = '';
-        adminNewLabel.value = '';
-        renderAdminLinks(data.links || []);
-        renderLinkSelect(data.links || []);
-        showAdminMsg(adminManageMsg, 'Link aggiunto.', 'success');
-    }catch(err){
-        console.error(err);
-        showAdminMsg(adminManageMsg, 'Errore di rete durante l\'aggiunta.', 'error');
-    }
+  const url = adminNewUrl.value.trim();
+  const label = adminNewLabel.value.trim();
+  if (!url) return;
+  const { ok, data } = await fetchJSON('/api/links', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url,label}) });
+  if (!ok) { showAdminMsg(adminManageMsg, data.error || 'Impossibile aggiungere il link.', 'error'); return; }
+  adminNewUrl.value=''; adminNewLabel.value='';
+  renderAdminLinks(data.links);
+  renderLinkSelect(data.links);
+  showAdminMsg(adminManageMsg, 'Link aggiunto.', 'success');
 });
+addUserBtn.addEventListener('click', async () => {
+  const email = newUserEmail.value.trim();
+  const role = newUserRole.value;
+  if (!email) { showAdminMsg(usersMsg, 'Inserisci un\'email valida.', 'error'); return; }
+  const { ok, data } = await fetchJSON('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, role}) });
+  if (!ok) { showAdminMsg(usersMsg, data.error || 'Impossibile creare l\'utente.', 'error'); return; }
+  newUserEmail.value = '';
+  showAdminMsg(usersMsg, 'Utente creato e invitato via email.', 'success');
+  loadUsers();
+});
+
+logoutBtn.addEventListener('click', async () => {
+  try { await fetchJSON('/api/auth', { method:'DELETE' }); } catch(err) { console.error(err); }
+  currentSession = null;
+  if (window.netlifyIdentity) window.netlifyIdentity.logout();
+  setAuthState(false);
+  showAuthMessage('Hai effettuato il logout.', false);
+});
+
+authGoogleBtn.addEventListener('click', () => {
+  if (window.netlifyIdentity) window.netlifyIdentity.open('login');
+});
+authLoginBtn.addEventListener('click', async () => {
+  const email = authEmailInput.value.trim();
+  const password = authPasswordInput.value;
+  if (!email || !password) { showAuthMessage('Inserisci email e password.', true); return; }
+  authLoginBtn.disabled = true;
+  try {
+    if (!window.netlifyIdentity) { showAuthMessage('Sistema di accesso non disponibile, riprova.', true); return; }
+    await window.netlifyIdentity.gotrue.login(email, password, true);
+    await completeServerSession(true);
+    if (currentSession) { clearAuthMessage(); loadSavedLinks(); setStatus('Accesso eseguito.'); }
+  } catch (err) {
+    console.error(err);
+    showAuthMessage('Email o password non corretti.', true);
+  } finally {
+    authLoginBtn.disabled = false;
+  }
+});
+authPasswordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') authLoginBtn.click(); });
 
 function initAuthFlow(){
-    if(!window.netlifyIdentity){
-        window.setTimeout(initAuthFlow, 200);
-        return;
-    }
-
-    window.netlifyIdentity.init();
-    window.netlifyIdentity.on('init', user => {
-        if(user){
-            completeGoogleLogin(user, { showMessages: false });
-        } else {
-            refreshAuthState({ showMessages: false });
-        }
-    });
-    window.netlifyIdentity.on('login', async user => {
-        const auth = await completeGoogleLogin(user, { showMessages: false });
-        if(auth){
-            clearAuthMessage();
-            loadSavedLinks();
-            setStatus('Accesso eseguito con Google.');
-        }
-    });
-    window.netlifyIdentity.on('logout', () => {
-        currentAuth = null;
-        setAuthState(false);
-        clearStatus();
-        showAuthMessage('Sei uscito. Accedi di nuovo per usare il servizio.', false);
-    });
-
-    refreshAuthState({ showMessages: false });
-    window.addEventListener('pageshow', () => {
-        refreshAuthState({ showMessages: false });
-    });
+  if (!window.netlifyIdentity) { window.setTimeout(initAuthFlow, 200); return; }
+  window.netlifyIdentity.init();
+  window.netlifyIdentity.on('init', (user) => {
+    if (user) completeServerSession(false);
+    else refreshAuthState(false);
+  });
+  window.netlifyIdentity.on('login', async () => {
+    const s = await completeServerSession(false);
+    if (s) { clearAuthMessage(); loadSavedLinks(); setStatus('Accesso eseguito.'); }
+  });
+  window.netlifyIdentity.on('logout', () => {
+    currentSession = null;
+    setAuthState(false);
+    clearStatus();
+    showAuthMessage('Sei uscito. Accedi di nuovo per usare il servizio.', false);
+  });
+  window.addEventListener('pageshow', () => refreshAuthState(false));
+  initAuthFlow.done = true;
 }
 initAuthFlow();
 </script>
