@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Verifica sicurezza — pagina temporanea</title>
+<style>
+:root{--bg:#f5f2ec;--paper:#fffdfa;--ink:#211f1c;--muted:#8a8377;--line:#e7ddcd;--accent:#c96f42;--ok:#2f7a3d;--okb:#eef8f0;--err:#a3342a;--errb:#fbeceb;--radius:16px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px 16px}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:20px;margin:0 0 6px}
+p.lead{color:var(--muted);margin:0 0 20px;font-size:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px}
+.test{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f0e9dd}
+.test:last-child{border-bottom:0}
+.test .desc{flex:1}
+.test .name{font-weight:700;font-size:14px}
+.test .detail{font-size:12px;color:var(--muted);margin-top:2px}
+.badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.badge.pending{background:#f1eade;color:var(--muted)}
+.badge.pass{background:var(--okb);color:var(--ok);border:1px solid #cbe8d1}
+.badge.fail{background:var(--errb);color:var(--err);border:1px solid #f1c9c5}
+.summary{padding:16px 18px;border-radius:var(--radius);margin-top:16px;font-weight:700}
+.summary.pass{background:var(--okb);color:var(--ok);border:1px solid #cbe8d1}
+.summary.fail{background:var(--errb);color:var(--err);border:1px solid #f1c9c5}
+.summary.pending{background:#f1eade;color:var(--muted)}
+button{border:0;background:var(--accent);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:14px}
+button:disabled{opacity:.5;cursor:not-allowed}
+code{background:#f1eade;padding:2px 6px;border-radius:6px;font-size:12.5px}
+.note{font-size:12.5px;color:var(--muted);margin-top:18px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Verifica di sicurezza — accesso non autorizzato</h1>
+  <p class="lead">
+    Pagina temporanea di collaudo. Esegue chiamate reali alle API dell'app
+    <strong>senza alcuna autenticazione</strong> e verifica che ogni funzione
+    e ogni dato risponda "accesso negato". Non richiede login: se qualche
+    test qui sotto fallisce, significa che qualcosa è raggiungibile senza
+    autorizzazione e va corretto prima di considerare il sistema sicuro.
+  </p>
+
+  <div class="card">
+    <div id="testList"></div>
+  </div>
+
+  <div id="summary" class="summary pending">In attesa di esecuzione…</div>
+
+  <button id="runBtn" type="button">Esegui i test</button>
+
+  <div id="afterPass" class="note" style="display:none">
+    <strong>Tutti i test sono passati.</strong> Questa pagina ha esaurito la
+    sua funzione ed è meglio non lasciarla pubblicata: una pagina di test
+    statica non può auto-cancellarsi dal sito (Netlify serve file
+    pubblicati, non modificabili da una richiesta del browser), quindi il
+    passo finale è manuale:
+    <br>1. rimuovi <code>public/security-check.html</code> dal repository;
+    <br>2. fai commit &amp; push (o redeploy) per aggiornare il sito pubblicato.
+    <br>Da questo momento il contenuto qui sotto viene comunque nascosto in
+    questa sessione del browser, così la pagina non resta utilizzabile per
+    sbaglio.
+  </div>
+
+  <p class="note">
+    Nota: questi test verificano l'accesso <em>non autenticato</em> (il caso
+    più critico: "chiunque, senza fare login, può leggere o modificare
+    qualcosa?"). Non possono verificare dal browser i permessi tra i ruoli
+    standard/intermedio/admin, perché richiederebbero credenziali reali di
+    utenti diversi: quel controllo è invece coperto dalla test-suite
+    automatica in <code>tests/security.test.mjs</code> (da eseguire con
+    <code>npm test</code>), che verifica ogni combinazione di ruolo e
+    metodo HTTP.
+  </p>
+</div>
+
+<script>
+const tests = [
+  {
+    name: 'GET /api/auth senza login',
+    detail: 'Deve rispondere 401 (nessuna sessione), non 200.',
+    run: async () => {
+      const res = await fetch('/api/auth', { credentials: 'omit' });
+      return { pass: res.status === 401, info: `HTTP ${res.status}` };
+    },
+  },
+  {
+    name: 'GET /api/links senza login',
+    detail: 'La lista dei link salvati non deve essere leggibile senza autenticazione.',
+    run: async () => {
+      const res = await fetch('/api/links', { credentials: 'omit' });
+      return { pass: res.status === 401, info: `HTTP ${res.status}` };
+    },
+  },
+  {
+    name: 'POST /api/links senza login',
+    detail: 'Non deve essere possibile aggiungere un link senza autenticazione.',
+    run: async () => {
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com/test-non-autorizzato.ics', label: 'test sicurezza' }),
+      });
+      return { pass: res.status === 401, info: `HTTP ${res.status}` };
+    },
+  },
+  {
+    name: 'PUT /api/links senza login',
+    detail: 'La modifica di un link non deve essere possibile senza autenticazione.',
+    run: async () => {
+      const res = await fetch('/api/links', {
+        method: 'PUT',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: 'non-esiste', url: 'https://example.com', label: '' }),
+      });
+      return { pass: res.status === 401, info: `HTTP ${res.status}` };
+    },
+  },
+  {
+    name: 'DELETE /api/links senza login',
+    detail: 'L\'eliminazione di un link non deve essere possibile senza autenticazione.',
+    run: async () => {
+      const res = await fetch('/api/links?id=non-esiste', { method: 'DELETE', credentials: 'omit' });
+      return { pass: res.status === 401, info: `HTTP ${res.status}` };
+    },
+  },
+  {
+    name: 'GET /api/fetch-ical senza login',
+    detail: 'Il proxy di download non deve funzionare senza autenticazione.',
+    run: async () => {
+      const res = await fetch('/api/fetch-ical?url=https://example.com/test.ics', { credentials: 'omit' });
+      return { pass: res.status === 401, info: `HTTP ${res.status}` };
+    },
+  },
+  {
+    name: 'GET /api/users senza login',
+    detail: 'La gestione utenti (riservata all\'amministratore) non deve rispondere senza autenticazione.',
+    run: async () => {
+      const res = await fetch('/api/users', { credentials: 'omit' });
+      return { pass: res.status === 401, info: `HTTP ${res.status}` };
+    },
+  },
+  {
+    name: 'POST /api/users senza login',
+    detail: 'Non deve essere possibile invitare un nuovo utente senza autenticazione.',
+    run: async () => {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'test-sicurezza@example.com', role: 'standard' }),
+      });
+      return { pass: res.status === 401, info: `HTTP ${res.status}` };
+    },
+  },
+  {
+    name: 'Nessun cookie di sessione residuo',
+    detail: 'Il sistema non deve più usare cookie custom (app_session): l\'autenticazione è solo Bearer JWT di Netlify Identity.',
+    run: async () => {
+      const hasLegacyCookie = document.cookie.split(';').some(c => c.trim().startsWith('app_session='));
+      return { pass: !hasLegacyCookie, info: hasLegacyCookie ? 'Trovato cookie app_session residuo' : 'Nessun cookie app_session' };
+    },
+  },
+];
+
+const testListEl = document.getElementById('testList');
+const summaryEl = document.getElementById('summary');
+const runBtn = document.getElementById('runBtn');
+const afterPassEl = document.getElementById('afterPass');
+
+function renderPending(){
+  testListEl.innerHTML = tests.map(t => `
+    <div class="test" data-name="${t.name}">
+      <div class="desc">
+        <div class="name">${t.name}</div>
+        <div class="detail">${t.detail}</div>
+      </div>
+      <span class="badge pending">In attesa</span>
+    </div>
+  `).join('');
+}
+renderPending();
+
+runBtn.addEventListener('click', async () => {
+  runBtn.disabled = true;
+  summaryEl.className = 'summary pending';
+  summaryEl.textContent = 'Test in corso…';
+  const rows = testListEl.querySelectorAll('.test');
+  let allPass = true;
+
+  for(let i = 0; i < tests.length; i++){
+    const badge = rows[i].querySelector('.badge');
+    badge.textContent = '…';
+    try{
+      const { pass, info } = await tests[i].run();
+      badge.textContent = pass ? 'PASS' : 'FAIL';
+      badge.className = 'badge ' + (pass ? 'pass' : 'fail');
+      rows[i].querySelector('.detail').textContent = tests[i].detail + ' — ' + info;
+      if(!pass) allPass = false;
+    }catch(err){
+      badge.textContent = 'ERRORE';
+      badge.className = 'badge fail';
+      rows[i].querySelector('.detail').textContent = tests[i].detail + ' — errore: ' + (err?.message || err);
+      allPass = false;
+    }
+  }
+
+  if(allPass){
+    summaryEl.className = 'summary pass';
+    summaryEl.textContent = 'Tutti i test sono passati: nessun accesso non autorizzato rilevato.';
+    afterPassEl.style.display = 'block';
+    sessionStorage.setItem('securityCheckPassed', '1');
+  } else {
+    summaryEl.className = 'summary fail';
+    summaryEl.textContent = 'Attenzione: almeno un test è fallito. Non considerare il sistema sicuro finché non viene corretto.';
+  }
+  runBtn.disabled = false;
+});
+
+// Se in questa sessione del browser i test erano già passati, non
+// ripresentare i controlli attivi: la pagina si "auto-disattiva" a
+// livello di sessione (resta comunque necessario rimuovere il file dal
+// deploy per un vero smaltimento, vedi nota sopra).
+if(sessionStorage.getItem('securityCheckPassed') === '1'){
+  document.querySelector('.wrap').innerHTML = `
+    <h1>Verifica di sicurezza — completata</h1>
+    <p class="lead">I test sono già stati eseguiti con successo in questa sessione del browser.</p>
+    <div class="note">Ricordati di rimuovere <code>public/security-check.html</code> dal progetto e rifare il deploy.</div>
+  `;
+}
+</script>
+</body>
+</html>
