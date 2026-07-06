@@ -149,6 +149,10 @@
     );
     if (!match) return null;
     history.replaceState(null, '', window.location.pathname + window.location.search);
+    // Nota: 'invite' qui è solo un'etichetta per la UI (per distinguere
+    // "nuovo invito" da "conferma email"/"recupero password"). L'endpoint
+    // /verify di GoTrue NON accetta type:"invite": chi chiama verify()
+    // per un invito deve comunque passare type:"signup" (vedi app.js).
     const typeMap = {
       confirmation_token: 'signup',
       invite_token: 'invite',

@@ -1140,7 +1140,13 @@ authSetPasswordBtn.addEventListener('click', async () => {
     }
     authSetPasswordBtn.disabled = true;
     try{
-        await window.IdentityClient.verify(pendingVerify.type, pendingVerify.token, password);
+        // Netlify Identity (GoTrue) accetta su /verify solo i tipi
+        // "signup", "recovery" ed "email_change": "invite" non è un tipo
+        // valido lato server. Per completare un invito bisogna comunque
+        // inviare type "signup" (il token stesso identifica che si tratta
+        // di un invito): pendingVerify.type resta 'invite' solo per la UI.
+        const verifyType = pendingVerify.type === 'invite' ? 'signup' : pendingVerify.type;
+        await window.IdentityClient.verify(verifyType, pendingVerify.token, password);
         pendingVerify = null;
         authSetPasswordForm.classList.add('hidden');
         authLoginForm.classList.remove('hidden');
