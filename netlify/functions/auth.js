@@ -1,39 +1,26 @@
 // auth.js — GET /api/auth
 //
 // Unico scopo: dire al frontend "chi sono e cosa posso fare", leggendo
-// esclusivamente context.clientContext.user (Netlify Identity nativo) e
-// risolvendo il ruolo applicativo. Non crea nessuna sessione custom: non
-// c'è nessun POST/DELETE qui, perché login e logout sono gestiti al 100%
-// dal widget Netlify Identity lato client.
+// esclusivamente il JWT di Netlify Identity tramite requireRole (lo stesso
+// helper condiviso usato da tutte le altre function protette). Non crea
+// nessuna sessione custom: non c'è nessun POST/DELETE qui, perché login,
+// logout e creazione utenti sono gestiti al 100% da Netlify Identity.
 
-import { getIdentityUser, getUserEmail, resolveRole, jsonResponse } from "./auth-utils.js";
+import { requireRole, jsonResponse } from "./auth-utils.js";
 
 export default async (req, context) => {
   if (req.method !== "GET") {
     return jsonResponse({ error: "Metodo non supportato." }, 405);
   }
 
-  const user = getIdentityUser(context);
-  const email = getUserEmail(user);
-
-  if (!email) {
-    return jsonResponse({ error: "Autenticazione richiesta." }, 401);
-  }
-
-  const role = await resolveRole(email);
-  if (!role) {
-    return jsonResponse(
-      { error: "Account non autorizzato. Contatta l'amministratore per essere invitato." },
-      403
-    );
-  }
+  const auth = await requireRole(req, context, "standard");
+  if (auth.error) return auth.error;
 
   return jsonResponse({
     ok: true,
-    user: { email },
-    role,
-    isAdmin: role === "admin",
-    canEditLinks: role === "admin" || role === "intermedio",
+    user: { email: auth.email },
+    role: auth.role,
+    isAdmin: auth.role === "admin",
   });
 };
 

@@ -1,22 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-process.env.APP_ADMIN_EMAILS = 'admin@example.com';
+// Le function sotto test usano @netlify/blobs (solo per i link salvati:
+// nessun dato utente ci passa più attraverso), che fuori dall'ambiente
+// Netlify non ha credenziali. links.js gestisce l'errore internamente e
+// torna una lista vuota, quindi i test qui sotto restano validi anche in
+// locale/CI.
+//
+// Il ruolo applicativo è derivato SOLO dal ruolo nativo Netlify Identity
+// (app_metadata.roles) iniettato nel JWT: qui lo simuliamo direttamente in
+// context.clientContext.user.app_metadata.roles.
 
-// Le function sotto test usano @netlify/blobs, che fuori dall'ambiente
-// Netlify non ha credenziali: readRoles/writeRoles gestiscono l'errore e
-// tornano un oggetto vuoto, quindi i test qui sotto restano validi anche in
-// locale/CI e coprono comunque i casi di sicurezza più critici (401/403,
-// whitelist-only, ruolo admin definito solo da env var).
-
-function fakeContext(email) {
+function fakeContext(email, roles = []) {
   if (!email) return {};
-  return { clientContext: { user: { email } } };
+  return { clientContext: { user: { email, app_metadata: { roles } } } };
 }
 
 const fetchIcal = (await import('../netlify/functions/fetch-ical.js')).default;
 const links = (await import('../netlify/functions/links.js')).default;
-const users = (await import('../netlify/functions/users.js')).default;
 const auth = (await import('../netlify/functions/auth.js')).default;
 
 test('fetch-ical: nessun utente -> 401', async () => {
@@ -25,10 +26,13 @@ test('fetch-ical: nessun utente -> 401', async () => {
   assert.equal(res.status, 401);
 });
 
-test('fetch-ical: utente non autorizzato (non invitato) -> 403', async () => {
+test('fetch-ical: utente Identity autenticato (standard) -> passa l\'autorizzazione', async () => {
   const req = new Request('https://example.com/api/fetch-ical?url=https://x.test/cal.ics');
-  const res = await fetchIcal(req, fakeContext('estraneo@example.com'));
-  assert.equal(res.status, 403);
+  const res = await fetchIcal(req, fakeContext('utente@example.com'));
+  // Nessun 401/403: l'autorizzazione passa. Il fetch remoto verso un host
+  // inesistente fallirà a valle (502/500), ma non è quello che testiamo qui.
+  assert.notEqual(res.status, 401);
+  assert.notEqual(res.status, 403);
 });
 
 test('links: nessun utente -> 401 su ogni metodo', async () => {
@@ -39,31 +43,41 @@ test('links: nessun utente -> 401 su ogni metodo', async () => {
   }
 });
 
-test('links: utente non invitato -> 403', async () => {
-  const req = new Request('https://example.com/api/links');
-  const res = await links(req, fakeContext('estraneo@example.com'));
-  assert.equal(res.status, 403);
+test('links: utente standard può leggere e aggiungere', async () => {
+  for (const method of ['GET', 'POST']) {
+    const req = new Request('https://example.com/api/links', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: method === 'POST' ? JSON.stringify({ url: 'https://x.test/a.ics' }) : undefined,
+    });
+    const res = await links(req, fakeContext('utente@example.com'));
+    assert.notEqual(res.status, 401, `metodo ${method}`);
+    assert.notEqual(res.status, 403, `metodo ${method}`);
+  }
 });
 
-test('users: nessun utente -> 401', async () => {
-  const req = new Request('https://example.com/api/users');
-  const res = await users(req, fakeContext(null));
-  assert.equal(res.status, 401);
+test('links: utente standard NON può modificare o eliminare -> 403', async () => {
+  for (const method of ['PUT', 'DELETE']) {
+    const req = new Request('https://example.com/api/links?id=x', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: method === 'PUT' ? JSON.stringify({ id: 'x', url: 'https://x.test/a.ics' }) : undefined,
+    });
+    const res = await links(req, fakeContext('utente@example.com'));
+    assert.equal(res.status, 403, `metodo ${method}`);
+  }
 });
 
-test('users: utente autenticato ma non admin -> 403', async () => {
-  const req = new Request('https://example.com/api/users');
-  const res = await users(req, fakeContext('estraneo@example.com'));
-  assert.equal(res.status, 403);
-});
-
-test('users: admin definito da env può accedere alla lista', async () => {
-  const req = new Request('https://example.com/api/users');
-  const res = await users(req, fakeContext('admin@example.com'));
-  assert.equal(res.status, 200);
-  const body = await res.json();
-  assert.ok(Array.isArray(body.users));
-  assert.ok(body.users.some((u) => u.email === 'admin@example.com' && u.role === 'admin'));
+test('links: utente con ruolo admin può modificare o eliminare', async () => {
+  for (const method of ['PUT', 'DELETE']) {
+    const req = new Request('https://example.com/api/links?id=x', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: method === 'PUT' ? JSON.stringify({ id: 'x', url: 'https://x.test/a.ics' }) : undefined,
+    });
+    const res = await links(req, fakeContext('admin@example.com', ['admin']));
+    assert.notEqual(res.status, 403, `metodo ${method}`);
+  }
 });
 
 test('auth: nessun utente -> 401', async () => {
@@ -72,16 +86,20 @@ test('auth: nessun utente -> 401', async () => {
   assert.equal(res.status, 401);
 });
 
-test('auth: admin -> isAdmin true', async () => {
+test('auth: ruolo Identity "admin" -> isAdmin true', async () => {
   const req = new Request('https://example.com/api/auth');
-  const res = await auth(req, fakeContext('admin@example.com'));
+  const res = await auth(req, fakeContext('admin@example.com', ['admin']));
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.isAdmin, true);
+  assert.equal(body.role, 'admin');
 });
 
-test('auth: utente non invitato -> 403 (whitelist-only, mai accesso di default)', async () => {
+test('auth: utente Identity senza ruoli -> standard, isAdmin false, comunque autorizzato', async () => {
   const req = new Request('https://example.com/api/auth');
   const res = await auth(req, fakeContext('chiunque@example.com'));
-  assert.equal(res.status, 403);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.isAdmin, false);
+  assert.equal(body.role, 'standard');
 });

@@ -2,19 +2,27 @@
 
 ## Architettura
 
-Sito statico + quattro Netlify Functions, nessun framework build.
+Sito statico + tre Netlify Functions, nessun framework build.
 
-- `public/index.html` — unica pagina. Genera l'itinerario da un file `.ics`
-  caricato localmente oppure da un link webcal/iCal recuperato tramite
-  `fetch-ical`. Include anche la UI per cercare/salvare link, il pannello di
-  amministrazione dei link salvati e il pannello di gestione utenti.
-- `public/security-check.html` — pagina temporanea di collaudo (vedi sezione
-  dedicata più sotto). Da rimuovere una volta verificato che tutto è a posto.
+- `public/index.html` — markup della pagina (form di caricamento file, form
+  per cercare/salvare un link, tendina dei link salvati, pannello di
+  amministrazione dei link salvati visibile solo al ruolo `admin`).
+  **Non esiste nessuna UI di gestione utenti**: la creazione di account e
+  l'assegnazione dei ruoli avvengono esclusivamente dal pannello Netlify
+  Identity.
+- `public/app.js` — tutta la logica JS di `index.html` (parsing/rendering
+  itinerario, chiamate alle API, flusso Netlify Identity). Volutamente in un
+  file esterno e non inline: la CSP in `netlify.toml` non concede
+  `unsafe-inline` su `script-src`, quindi uno script iniettato via HTML non
+  verrebbe comunque eseguito dal browser.
+- `public/security-check.html` + `public/security-check.js` — pagina/script
+  temporanei di collaudo (vedi sezione dedicata più sotto). Da rimuovere una
+  volta verificato che tutto è a posto.
 - `netlify/functions/auth-utils.js` — modulo condiviso con TUTTA la logica di
   autenticazione/autorizzazione. Nessun'altra function duplica questa logica.
 - `netlify/functions/auth.js` — Netlify Function v2 (ESM). Espone
-  `GET /api/auth`: ritorna email, ruolo e permessi dell'utente corrente,
-  leggendo solo il JWT di Netlify Identity iniettato da Netlify in
+  `GET /api/auth`: ritorna email e ruolo dell'utente corrente, leggendo solo
+  il JWT di Netlify Identity iniettato da Netlify in
   `context.clientContext.user`. Nessun POST/DELETE: login e logout sono
   gestiti al 100% dal widget Netlify Identity lato client.
 - `netlify/functions/fetch-ical.js` — Netlify Function v2 (ESM). Espone
@@ -25,21 +33,19 @@ Sito statico + quattro Netlify Functions, nessun framework build.
     `BEGIN:VCALENDAR`.
   - Ritorna il body con `Content-Type: text/calendar` e
     `Content-Disposition: attachment` così il browser lo scarica come `.ics`.
-  - Richiede un utente autenticato con ruolo minimo `standard`.
+  - Richiede un utente autenticato (ruolo minimo `standard`).
 - `netlify/functions/links.js` — Netlify Function v2 (ESM). Espone
   `/api/links` e gestisce la lista condivisa dei link salvati, persistita con
   **Netlify Blobs** (`@netlify/blobs`, store `webcal-links`, chiave
-  `links.json`).
+  `links.json`). Questo è l'UNICO uso di Blobs nel progetto ed è dato
+  applicativo (link salvati), non dato utente.
   - `GET`/`POST` richiedono ruolo minimo `standard`.
-  - `PUT`/`DELETE` richiedono ruolo minimo `intermedio`.
-- `netlify/functions/users.js` — Netlify Function v2 (ESM). Espone
-  `/api/users`, riservata esclusivamente al ruolo `admin`.
-  - `GET` elenca gli utenti abilitati e il loro ruolo.
-  - `POST` invita una nuova email con ruolo `standard` o `intermedio`:
-    salva il ruolo su Blobs e invia l'invito nativo di Netlify Identity
-    (nessun sistema di invio email custom).
-  - `PUT` cambia il ruolo di un utente già invitato.
-  - `DELETE` revoca l'accesso di un'email (rimuove il ruolo dai Blobs).
+  - `PUT`/`DELETE` richiedono ruolo minimo `admin`.
+
+**Non esiste una function `users.js` né un endpoint `/api/users`.** La
+gestione utenti non è responsabilità di questo progetto: chiunque volesse
+aggiungerla starebbe reintroducendo esattamente ciò che è stato rimosso
+intenzionalmente.
 
 ## Modello di autenticazione e autorizzazione
 
@@ -54,46 +60,40 @@ codice). Ogni chiamata alle nostre API allega
 in `context.clientContext.user` di ogni function — è l'UNICA fonte di verità
 su "chi ha fatto la richiesta".
 
-**Autorizzazione = 3 ruoli applicativi**, risolti da `auth-utils.js`:
+**Autorizzazione = 2 ruoli, entrambi nativi di Netlify Identity**, letti da
+`auth-utils.js` direttamente da `user.app_metadata.roles` (il campo che
+Netlify popola nel JWT a partire dai Ruoli assegnati all'utente dal pannello
+Identity → Users → Roles):
 
-| Ruolo         | Definito da                              | Può fare |
-|---------------|-------------------------------------------|----------|
-| `admin`       | variabile d'ambiente `APP_ADMIN_EMAILS`   | tutto, incluso gestire gli utenti |
-| `intermedio`  | Netlify Blobs (store `app-roles`)         | standard + modificare/eliminare link salvati |
-| `standard`    | Netlify Blobs (store `app-roles`)         | vedere/scaricare calendari, salvare nuovi link |
-| *(nessuno)*   | email non presente né in `APP_ADMIN_EMAILS` né nei Blobs | nessun accesso: whitelist-only, mai opt-out di default |
+| Ruolo         | Definito da                                             | Può fare |
+|---------------|----------------------------------------------------------|----------|
+| `admin`       | ruolo "admin" assegnato dal pannello Netlify Identity     | tutto: link, incluse modifica/eliminazione |
+| `standard`    | implicito: qualunque utente Identity autenticato senza il ruolo "admin" | vedere/scaricare calendari, salvare nuovi link |
 
-L'admin è **sempre e solo** definito dalla variabile d'ambiente: non è mai
-scrivibile da UI o da Blobs, così l'amministratore non può mai bloccarsi
-fuori per errore. Gli altri ruoli sono assegnati dall'admin dal pannello
-"Utenti" e persistiti su Blobs.
+Non esiste un terzo livello, non esiste una whitelist applicativa, non
+esiste nessuna persistenza di ruoli o email lato app: l'unica fonte di
+verità sul ruolo è il JWT di Netlify Identity, ad ogni singola richiesta.
 
 ## Variabili d'ambiente richieste
 
-- `APP_ADMIN_EMAILS` — lista di email (separate da virgola) degli
-  amministratori, es. `admin@esempio.it`. **Obbligatoria**: senza questa
-  variabile nessuno può accedere al pannello utenti.
-
-Netlify Identity deve essere abilitato sul sito (Site settings → Identity →
-Enable Identity). Non serve più `APP_AUTH_JWT_SECRET`/`JWT_SECRET`
-(rimossi con l'eliminazione della sessione custom) né `APP_AUTH_ALLOWED_EMAILS`
-/`APP_AUTH_ADMIN_EMAILS` (rimpiazzate dal nuovo modello a ruoli).
+Nessuna. Non c'è più `APP_ADMIN_EMAILS` né altra variabile legata a utenti o
+ruoli: tutto è configurato dal pannello Netlify Identity (Site settings →
+Identity → Enable Identity, poi Users → Roles per assegnare `admin`).
 
 ## Convenzioni
 
 - Nessuna build step: `netlify.toml` punta `publish` a `public/` e
   `functions` a `netlify/functions/`.
 - `package.json` ha `"type": "module"` per abilitare la sintassi ESM nelle
-  function e dichiara la dipendenza `@netlify/blobs` (la dipendenza `jose`
-  non è più necessaria: non c'è più nessun JWT custom da firmare/verificare).
+  function e dichiara la dipendenza `@netlify/blobs`, usata esclusivamente
+  da `links.js` per i link salvati.
 - `fetch-ical.js` resta puramente un proxy di download, senza persistenza.
-- `links.js` e `users.js` sono le uniche function con stato: usano Netlify
-  Blobs (storage gestito da Netlify, zero configurazione infrastrutturale)
-  invece di un database esterno.
+- `links.js` è la sola function con stato applicativo: usa Netlify Blobs
+  (storage gestito da Netlify, zero configurazione infrastrutturale) invece
+  di un database esterno. Nessun dato utente è mai scritto su Blobs o
+  altrove dal progetto.
 - Ogni function protetta usa `requireRole(req, context, minRole)` da
-  `auth-utils.js`: un solo punto di verità per l'autorizzazione, per evitare
-  la divergenza tra endpoint che causava instabilità nella versione
-  precedente (in cui ogni function ripeteva la propria logica di controllo).
+  `auth-utils.js`: un solo punto di verità per l'autorizzazione.
 
 ## Decisioni non ovvie
 
@@ -103,20 +103,14 @@ Enable Identity). Non serve più `APP_AUTH_JWT_SECRET`/`JWT_SECRET`
 - La validazione del contenuto (`BEGIN:VCALENDAR`) previene di servire come
   iCal risposte di errore HTML dell'endpoint remoto.
 - Aggiungere un link (`POST /api/links`) richiede comunque un utente
-  autenticato e autorizzato (ruolo minimo `standard`): non esiste più nessun
-  endpoint scrivibile senza autenticazione, per garantire che nessuno accede
-  a funzioni o dati salvati senza che l'amministratore lo desideri.
-- L'invito di un nuovo utente (`POST /api/users`) usa l'API admin nativa di
-  GoTrue/Netlify Identity (`{identity.url}/invite` con
-  `Authorization: Bearer {identity.token}`, entrambi iniettati da Netlify in
-  `context.clientContext.identity`): l'utente riceve una mail nativa di
-  Netlify per impostare la password, senza alcun sistema di invio email
-  gestito da noi.
-- Revocare l'accesso (`DELETE /api/users`) rimuove solo il ruolo applicativo
-  dai Blobs: da quel momento l'email, anche se ha ancora un account Identity
-  attivo, non supera più `requireRole` in nessuna function (nessun accesso
-  possibile). L'eventuale eliminazione dell'account Identity stesso resta
-  un'operazione manuale dal pannello Netlify, se desiderata.
+  Identity autenticato (ruolo minimo `standard`): non esiste nessun
+  endpoint scrivibile senza autenticazione.
+- La gestione utenti è stata deliberatamente rimossa dal progetto: creare,
+  invitare, elencare o revocare utenti, così come assegnare/cambiare ruoli,
+  sono operazioni che vanno fatte **solo** dal pannello Netlify Identity.
+  Questo evita qualunque logica "super user" o whitelist custom lato app,
+  qualunque uso di Blobs per dati utente, e mantiene l'intera superficie di
+  gestione accessi allo standard nativo di Netlify.
 
 ## Pagina di collaudo `security-check.html`
 
@@ -129,4 +123,5 @@ sito pubblicato (Netlify serve solo file già distribuiti, non modificabili
 da una richiesta del browser), quindi il passo finale — eliminare il file e
 rifare il deploy — resta manuale, come spiegato nella pagina stessa.
 Non sostituisce `tests/security.test.mjs`, che copre anche la matrice di
-permessi tra i ruoli (verificabile solo lato server, con `npm test`).
+permessi tra i ruoli standard/admin (verificabile solo lato server, con
+`npm test`).

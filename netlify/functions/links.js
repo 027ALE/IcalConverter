@@ -1,14 +1,13 @@
 // links.js — /api/links
 //
-// Lista condivisa dei link salvati, persistita su Netlify Blobs.
+// Lista condivisa dei link salvati, persistita su Netlify Blobs (dati
+// dell'app, non utenti: qui NON c'è nessuna gestione di account o ruoli).
 // Permessi:
-//   GET               -> ruolo minimo "standard" (tutti gli utenti invitati)
+//   GET               -> ruolo minimo "standard" (qualunque utente Identity)
 //   POST (aggiungi)   -> ruolo minimo "standard"
-//   PUT  (modifica)   -> ruolo minimo "intermedio"
-//   DELETE (elimina)  -> ruolo minimo "intermedio"
-// Nessuna operazione è più accessibile senza autenticazione: prima la
-// creazione di un link era pubblica by design, ora richiede comunque un
-// utente invitato dall'amministratore (nessun accesso non desiderato).
+//   PUT  (modifica)   -> ruolo minimo "admin"
+//   DELETE (elimina)  -> ruolo minimo "admin"
+// Nessuna operazione è accessibile senza autenticazione Netlify Identity.
 
 import { getStore } from "@netlify/blobs";
 import { requireRole, jsonResponse } from "./auth-utils.js";
@@ -53,7 +52,7 @@ function normalizeLabel(raw) {
 
 export default async (req, context) => {
   const method = req.method;
-  const minRole = method === "GET" || method === "POST" ? "standard" : "intermedio";
+  const minRole = method === "GET" || method === "POST" ? "standard" : "admin";
 
   const auth = await requireRole(req, context, minRole);
   if (auth.error) return auth.error;

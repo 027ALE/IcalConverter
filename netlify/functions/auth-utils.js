@@ -1,8 +1,8 @@
 // auth-utils.js
 //
-// Fondamento della sicurezza dell'app: l'AUTENTICAZIONE è affidata
-// interamente a Netlify Identity nativo. Non esiste nessun login custom,
-// nessun cookie di sessione, nessuna password gestita da noi.
+// Autenticazione: affidata al 100% a Netlify Identity nativo. Non esiste
+// nessun login custom, nessun cookie di sessione, nessuna password gestita
+// da noi, nessuna whitelist gestita dall'app.
 //
 // Netlify inietta automaticamente `context.clientContext.user` quando il
 // client manda l'header `Authorization: Bearer <jwt-identity>` con un JWT
@@ -11,26 +11,19 @@
 // "nessuno autenticato". Questo è l'UNICO punto da cui deriviamo "chi è
 // l'utente" in tutte le function.
 //
-// L'AUTORIZZAZIONE (chi può fare cosa) è invece un concetto della nostra
-// app, su 3 ruoli:
-//   - admin      -> definito ESCLUSIVAMENTE dalla variabile d'ambiente
-//                    APP_ADMIN_EMAILS (mai modificabile da UI, mai da Blobs:
-//                    così l'admin non può mai auto-bloccarsi fuori).
-//   - intermedio -> può anche modificare/eliminare i link salvati.
-//   - standard   -> può solo consultare, scaricare e salvare nuovi link.
-// I ruoli intermedio/standard sono assegnati dall'admin e persistiti su
-// Netlify Blobs (store "app-roles", chiave "roles.json").
-// Se un'email non è admin e non è presente nella mappa ruoli, l'utente è
-// autenticato con Netlify Identity ma NON è autorizzato a usare l'app
-// (nessun accesso di default: whitelist-only, mai opt-out).
-
-import { getStore } from "@netlify/blobs";
-
-const ROLE_STORE = "app-roles";
-const ROLE_KEY = "roles.json";
-
-export const ROLES = ["standard", "intermedio", "admin"];
-const ROLE_RANK = { standard: 1, intermedio: 2, admin: 3 };
+// Autorizzazione: usiamo esclusivamente i Ruoli nativi di Netlify Identity
+// (Identity → Users → seleziona utente → Roles), che Netlify inserisce nel
+// JWT come `app_metadata.roles`. L'app conosce solo 2 ruoli:
+//   - "admin"    -> assegnato all'utente dal pannello Netlify Identity.
+//                   Può anche modificare/eliminare i link salvati.
+//   - "standard" -> qualunque utente Identity autenticato che non ha il
+//                   ruolo "admin". Può consultare, scaricare e salvare
+//                   nuovi link.
+//
+// Chi può creare account e chi può accedere è deciso interamente da Netlify
+// (Identity → Registration: "Invite only" per limitare gli accessi, oppure
+// aperta se si preferisce). L'app non crea, invita, elenca o gestisce in
+// alcun modo gli utenti: si limita a leggere il ruolo già presente nel JWT.
 
 export function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -42,74 +35,34 @@ export function jsonResponse(body, status = 200) {
   });
 }
 
-export function parseEmailList(raw) {
-  return (raw || "")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-export function getAdminEmails() {
-  return parseEmailList(process.env.APP_ADMIN_EMAILS || "");
-}
-
-export function isEnvAdmin(email) {
-  if (!email) return false;
-  return getAdminEmails().includes(email);
-}
-
 // L'utente Identity, come iniettato da Netlify a partire dal Bearer JWT.
 // Ritorna null se non c'è nessun utente autenticato con un JWT valido.
-export function getIdentityUser(context) {
+function getIdentityUser(context) {
   return context?.clientContext?.user || null;
 }
 
-// Le credenziali "admin" di Identity (GoTrue) che Netlify inietta insieme
-// all'utente: servono solo per invitare nuovi utenti via API nativa.
-export function getIdentityAdminApi(context) {
-  const identity = context?.clientContext?.identity;
-  if (!identity?.url || !identity?.token) return null;
-  return { url: identity.url, token: identity.token };
-}
-
-export function getUserEmail(user) {
+function getUserEmail(user) {
   return (user?.email || "").trim().toLowerCase();
 }
 
-function rolesStore() {
-  return getStore({ name: ROLE_STORE, consistency: "strong" });
+// Ruoli nativi assegnati all'utente dal pannello Netlify Identity.
+function getIdentityRoles(user) {
+  const roles = user?.app_metadata?.roles;
+  return Array.isArray(roles) ? roles : [];
 }
 
-export async function readRoles() {
-  try {
-    const data = await rolesStore().get(ROLE_KEY, { type: "json" });
-    return data && typeof data === "object" && !Array.isArray(data) ? data : {};
-  } catch {
-    return {};
-  }
-}
-
-export async function writeRoles(roles) {
-  await rolesStore().setJSON(ROLE_KEY, roles);
-}
-
-// Risolve il ruolo applicativo di un'email, oppure null se non autorizzata.
-export async function resolveRole(email) {
-  if (!email) return null;
-  if (isEnvAdmin(email)) return "admin";
-  const roles = await readRoles();
-  const role = roles[email];
-  return ROLES.includes(role) ? role : null;
-}
-
-export function hasAtLeastRole(role, minRole) {
-  return (ROLE_RANK[role] || 0) >= (ROLE_RANK[minRole] || 0);
+// L'app conosce solo 2 livelli: "admin" (ruolo Netlify Identity "admin")
+// e "standard" (chiunque sia autenticato e non abbia il ruolo "admin").
+// Confronto case-insensitive: evita ambiguità se in Identity → Users →
+// Roles il ruolo viene digitato come "Admin"/"ADMIN" invece di "admin".
+function getRole(user) {
+  const roles = getIdentityRoles(user).map((r) => String(r).trim().toLowerCase());
+  return roles.includes("admin") ? "admin" : "standard";
 }
 
 // Helper unico per proteggere una function: verifica identità + ruolo
 // minimo richiesto. Usarlo in ogni function protetta evita divergenze tra
-// gli endpoint (una delle cause principali di instabilità del sistema
-// precedente, che duplicava questa logica in ogni file).
+// gli endpoint.
 export async function requireRole(req, context, minRole = "standard") {
   const identityUser = getIdentityUser(context);
   const email = getUserEmail(identityUser);
@@ -118,17 +71,9 @@ export async function requireRole(req, context, minRole = "standard") {
     return { error: jsonResponse({ error: "Autenticazione richiesta." }, 401) };
   }
 
-  const role = await resolveRole(email);
-  if (!role) {
-    return {
-      error: jsonResponse(
-        { error: "Account non autorizzato. Contatta l'amministratore per essere invitato." },
-        403
-      ),
-    };
-  }
+  const role = getRole(identityUser);
 
-  if (!hasAtLeastRole(role, minRole)) {
+  if (minRole === "admin" && role !== "admin") {
     return { error: jsonResponse({ error: "Permessi insufficienti per questa operazione." }, 403) };
   }
 

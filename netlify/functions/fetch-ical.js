@@ -1,10 +1,16 @@
 // fetch-ical.js — GET /api/fetch-ical?url=...
 //
-// Proxy di download per link webcal/iCal. Richiede un utente autenticato e
-// autorizzato con ruolo almeno "standard" (cioè: qualunque utente invitato
-// dall'amministratore).
+// Proxy di download per link webcal/iCal. Richiede un utente autenticato
+// con Netlify Identity (ruolo minimo "standard": qualunque utente Identity
+// autenticato, indipendentemente dal ruolo).
+//
+// Il fetch verso l'URL fornito dall'utente passa sempre da safeFetch()
+// (ssrf-guard.js), che blocca destinazioni interne/private (SSRF), segue
+// i redirect rivalidandoli uno per uno e applica un limite alla
+// dimensione del corpo scaricato.
 
 import { requireRole, jsonResponse } from "./auth-utils.js";
+import { safeFetch } from "./ssrf-guard.js";
 
 export default async (req, context) => {
   const auth = await requireRole(req, context, "standard");
@@ -28,15 +34,13 @@ export default async (req, context) => {
   }
 
   try {
-    const upstream = await fetch(target.toString(), {
+    const { response: upstream, body } = await safeFetch(target, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; iCal-Downloader/1.0)" },
     });
 
     if (!upstream.ok) {
       return jsonResponse({ error: `Impossibile scaricare il calendario (HTTP ${upstream.status})` }, 502);
     }
-
-    const body = await upstream.text();
 
     if (!body.includes("BEGIN:VCALENDAR")) {
       return jsonResponse({ error: "Il contenuto scaricato non sembra un file iCal valido" }, 502);
@@ -50,8 +54,16 @@ export default async (req, context) => {
         "Cache-Control": "no-store",
       },
     });
-  } catch {
-    return jsonResponse({ error: "Errore durante il recupero del calendario" }, 500);
+  } catch (err) {
+    console.error("fetch-ical:", err?.message || err);
+    const message =
+      err?.message === "L'URL punta a un indirizzo di rete non consentito." ||
+      err?.message === "Impossibile risolvere l'host di destinazione." ||
+      err?.message === "Il file scaricato supera la dimensione massima consentita." ||
+      err?.message === "Troppi redirect durante il recupero del calendario."
+        ? err.message
+        : "Errore durante il recupero del calendario";
+    return jsonResponse({ error: message }, 502);
   }
 };
 
