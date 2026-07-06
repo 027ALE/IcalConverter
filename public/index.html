@@ -21,23 +21,24 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,
 .auth-screen{min-height:70vh;display:grid;place-items:center;padding:24px 16px}
 .auth-card{max-width:560px;display:grid;gap:14px;padding:28px}
 .auth-card h2{margin:0;font-size:22px;font-family:Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif;font-style:italic}
+#authLoginForm,#authSetPasswordForm{display:grid;gap:14px}
 .auth-card p{margin:0;color:var(--muted)}.hidden{display:none!important}
 .wrap{max-width:1120px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 24px}
 .toolbar,.card,.day{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);width:100%;max-width:100%}
 .toolbar{padding:0;overflow:hidden;box-shadow:var(--shadow)}
 .toolbar>.title{background:linear-gradient(155deg,var(--cover),var(--cover-2));color:var(--cover-ink);padding:22px 24px 20px;margin:0;border-radius:var(--radius) var(--radius) 0 0}
 .toolbar>.title p{color:#cfd9df}
-.toolbar>*:not(.title){padding-left:20px;padding-right:20px}
-.toolbar>.section-label:first-of-type{margin-top:18px}
-.toolbar>.row:last-of-type,.toolbar>#summary{margin-bottom:20px}
-.toolbar>#status{margin:0 20px 20px}
+.toolbar>*:not(.title){padding-left:20px;padding-right:20px;margin:16px 0 0}
+.toolbar>*:not(.title):first-child{padding-top:20px;margin-top:0}
+.toolbar>*:not(.title):last-child{padding-bottom:20px}
+.section-label+.row{margin-top:8px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .title{display:grid;gap:6px}
 .title h1,.day h2,.stat .v{margin:0}
 .title h1{font-size:23px;letter-spacing:-.01em;font-family:Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif;font-style:italic;font-weight:600}
 .title p,.muted{color:var(--muted)}
 .title p{font-size:14px;line-height:1.45;margin:0}
-.section-label{font-size:10.5px;font-weight:600;color:var(--brass);text-transform:uppercase;letter-spacing:.14em;margin:4px 0 -2px}
+.section-label{font-size:10.5px;font-weight:600;color:var(--brass);text-transform:uppercase;letter-spacing:.14em}
 input[type=file]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;width:100%;font-size:15px;min-height:46px}
 select,input[type=url],input[type=text],input[type=email],input[type=password]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;flex:1;min-width:180px;font:inherit;font-size:16px;color:var(--ink);min-height:46px;-webkit-appearance:none;appearance:none}
 select:focus,input:focus{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
@@ -196,7 +197,7 @@ a{color:var(--brass)}
       <button id="logoutBtn" type="button" class="secondary" style="display:none">Esci</button>
     </div>
 
-    <div id="adminSection" hidden style="margin-top:14px">
+    <div id="adminSection" hidden>
       <p class="small">Gestione dei link salvati (riservata al ruolo amministratore, assegnato da Netlify Identity).</p>
       <div id="linksAdminMsg" class="status" style="display:none"></div>
       <div id="adminLinksList" style="display:grid;gap:10px"></div>
