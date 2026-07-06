@@ -61,7 +61,13 @@ export default async (req, context) => {
 
   if (method === "GET") {
     const links = await readLinks(store);
-    return jsonResponse({ links });
+    // savedBy (email di chi ha salvato il link) e' un dettaglio utile solo
+    // per l'amministrazione: non va esposto a utenti "standard", altrimenti
+    // chiunque sia loggato potrebbe leggere l'email di altri utenti solo
+    // ispezionando la risposta di rete.
+    const visibleLinks =
+      auth.role === "admin" ? links : links.map(({ savedBy, ...rest }) => rest);
+    return jsonResponse({ links: visibleLinks });
   }
 
   if (method === "POST") {

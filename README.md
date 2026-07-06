@@ -11,9 +11,17 @@ Sito statico che permette di:
 - gestire la lista dei link salvati (modifica/eliminazione) se si ha il
   ruolo `admin`.
 
-L'accesso è gestito interamente da **Netlify Identity nativo**: login,
-logout, creazione account e assegnazione dei ruoli avvengono tutti dal
-pannello Netlify (o dal widget Identity lato client per login/logout).
+L'accesso è gestito interamente da **Netlify Identity nativo**: creazione
+account e assegnazione dei ruoli avvengono dal pannello Netlify; login,
+registrazione, logout e recupero password avvengono da un piccolo client
+lato browser che parla direttamente con l'endpoint `/.netlify/identity`
+dello stesso dominio (vedi `public/identity-client.js`), non dal widget
+ufficiale `netlify-identity-widget.js`. Il motivo: quel widget carica
+script e frame dal dominio `identity.netlify.com`, che alcuni ad-blocker e
+protezioni anti-tracciamento del browser bloccano (il nome "identity"
+corrisponde ai filtri anti-fingerprinting), impedendo l'apertura del
+login. Le chiamate dirette allo stesso dominio del sito non hanno questo
+problema.
 **Il progetto non gestisce in alcun modo gli utenti**: non li crea, non li
 invita, non li elenca e non ne persiste il ruolo da nessuna parte. Si limita
 a leggere, ad ogni richiesta, il ruolo nativo già presente nel JWT.
@@ -27,6 +35,11 @@ a leggere, ad ogni richiesta, il ruolo nativo già presente nel JWT.
   di autenticazione lato client. È in un file separato (non inline) apposta
   per poter applicare una Content-Security-Policy senza `unsafe-inline` su
   `script-src` (vedi sezione "Verifica di sicurezza").
+- `public/identity-client.js` — client minimale per Netlify Identity:
+  login, registrazione, logout, recupero password e completamento di
+  inviti/conferme, tutto tramite `fetch` verso `/.netlify/identity/*`
+  (stesso dominio del sito). Nessuna libreria esterna, nessuno script
+  caricato da `identity.netlify.com`.
 - `netlify/functions/fetch-ical.js` — riceve un URL
   (`GET /api/fetch-ical?url=...`), lo converte da `webcal://` a `https://`,
   scarica il contenuto e lo restituisce come file `.ics`.

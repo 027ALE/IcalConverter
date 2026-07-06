@@ -43,13 +43,11 @@ function showAuthMessage(msg, warn=false){authMsg.textContent=msg;authMsg.classN
 function clearAuthMessage(){authMsg.style.display='none';authMsg.textContent='';}
 
 // Ottiene un JWT valido di Netlify Identity per l'utente corrente, oppure
-// null se nessuno ha effettuato il login. netlifyIdentity gestisce da solo
-// il refresh del token quando è scaduto.
+// null se nessuno ha effettuato il login. IdentityClient gestisce da solo
+// il refresh del token quando è scaduto (vedi identity-client.js).
 async function getIdentityJwt(){
-    const user = window.netlifyIdentity?.currentUser?.();
-    if(!user) return null;
     try{
-        return await user.jwt();
+        return await window.IdentityClient.getValidAccessToken();
     }catch(err){
         console.error('Impossibile ottenere il token Identity', err);
         return null;
@@ -1055,56 +1053,145 @@ linkSelect.addEventListener('change', async () => {
 
 adminAddBtn.addEventListener('click', addSavedLinkFromAdmin);
 
-// --- Login/logout: affidati SOLO al widget nativo di Netlify Identity. ---
-// Nessun form custom, nessuna chiamata a endpoint di provider specifici:
-// il widget mostra login/registrazione via email+password e, se
-// configurati in Netlify (Site settings → Identity → External providers),
-// anche i pulsanti OAuth (es. Google). Qui ci limitiamo ad apire/chiudere
-// il modal e a reagire agli eventi che il widget stesso emette.
-authLoginBtn.addEventListener('click', () => {
-    if(!window.netlifyIdentity){
-        showAuthMessage('Netlify Identity non è ancora pronto: riprova in un istante.', true);
-        return;
+// --- Login/logout: chiamate dirette a Netlify Identity (IdentityClient), ---
+// stesso dominio del sito, nessuno script caricato da terze parti. Vedi
+// identity-client.js per il perché di questa scelta al posto del widget.
+// Nessun form custom nel senso di "password gestita da noi": il modulo
+// parla solo con l'endpoint nativo /.netlify/identity di Netlify.
+
+const authEmail = document.getElementById('authEmail');
+const authPassword = document.getElementById('authPassword');
+const authSignupBtn = document.getElementById('authSignupBtn');
+const authForgotBtn = document.getElementById('authForgotBtn');
+const authSetPasswordForm = document.getElementById('authSetPasswordForm');
+const authLoginForm = document.getElementById('authLoginForm');
+const authNewPassword = document.getElementById('authNewPassword');
+const authSetPasswordBtn = document.getElementById('authSetPasswordBtn');
+let pendingVerify = null; // { type, token } in attesa che l'utente imposti una password
+
+function requireCredentials(){
+    const email = (authEmail.value || '').trim();
+    const password = authPassword.value || '';
+    if(!email || !password){
+        showAuthMessage('Inserisci email e password.', true);
+        return null;
     }
-    window.netlifyIdentity.open('login');
-});
-logoutBtn.addEventListener('click', () => {
-    window.netlifyIdentity?.logout();
-});
+    return { email, password };
+}
 
-function initAuthFlow(){
-    if(!window.netlifyIdentity){
-        window.setTimeout(initAuthFlow, 200);
-        return;
-    }
-
-    window.netlifyIdentity.init();
-
-    window.netlifyIdentity.on('login', async () => {
+authLoginBtn.addEventListener('click', async () => {
+    const creds = requireCredentials();
+    if(!creds) return;
+    authLoginBtn.disabled = true;
+    try{
+        await window.IdentityClient.login(creds.email, creds.password);
         clearAuthMessage();
         const session = await refreshSession();
         if(session){
             setStatus('Accesso eseguito.');
             loadSavedLinks();
         } else {
-            showAuthMessage('Accesso Netlify riuscito, ma non è stato possibile verificare la sessione. Riprova.', true);
+            showAuthMessage('Accesso riuscito, ma non è stato possibile verificare la sessione. Riprova.', true);
         }
-    });
-    window.netlifyIdentity.on('logout', () => {
-        currentSession = null;
-        applySessionToUI();
-        clearStatus();
-        showAuthMessage('Hai effettuato il logout. Accedi di nuovo per usare il servizio.', false);
-    });
-    window.netlifyIdentity.on('error', err => {
-        console.error('Netlify Identity error', err);
-        showAuthMessage('Si è verificato un errore con Netlify Identity. Riprova più tardi.', true);
-    });
+    }catch(err){
+        showAuthMessage(err.message || 'Credenziali non valide.', true);
+    }finally{
+        authLoginBtn.disabled = false;
+    }
+});
+
+authSignupBtn.addEventListener('click', async () => {
+    const creds = requireCredentials();
+    if(!creds) return;
+    authSignupBtn.disabled = true;
+    try{
+        await window.IdentityClient.signup(creds.email, creds.password);
+        showAuthMessage('Registrazione inviata. Controlla la tua email per confermare l\'account (se richiesto).', false);
+    }catch(err){
+        showAuthMessage(err.message || 'Impossibile registrarsi.', true);
+    }finally{
+        authSignupBtn.disabled = false;
+    }
+});
+
+authForgotBtn.addEventListener('click', async () => {
+    const email = (authEmail.value || '').trim();
+    if(!email){
+        showAuthMessage('Inserisci la tua email per ricevere il link di recupero.', true);
+        return;
+    }
+    authForgotBtn.disabled = true;
+    try{
+        await window.IdentityClient.recover(email);
+        showAuthMessage('Email di recupero inviata, controlla la posta.', false);
+    }catch(err){
+        showAuthMessage(err.message || 'Impossibile inviare l\'email di recupero.', true);
+    }finally{
+        authForgotBtn.disabled = false;
+    }
+});
+
+authSetPasswordBtn.addEventListener('click', async () => {
+    if(!pendingVerify) return;
+    const password = authNewPassword.value || '';
+    if(password.length < 6){
+        showAuthMessage('La password deve avere almeno 6 caratteri.', true);
+        return;
+    }
+    authSetPasswordBtn.disabled = true;
+    try{
+        await window.IdentityClient.verify(pendingVerify.type, pendingVerify.token, password);
+        pendingVerify = null;
+        authSetPasswordForm.classList.add('hidden');
+        authLoginForm.classList.remove('hidden');
+        clearAuthMessage();
+        const session = await refreshSession();
+        if(session){
+            setStatus('Accesso eseguito.');
+            loadSavedLinks();
+        }
+    }catch(err){
+        showAuthMessage(err.message || 'Token non valido o scaduto. Richiedi un nuovo invito/recupero.', true);
+    }finally{
+        authSetPasswordBtn.disabled = false;
+    }
+});
+
+logoutBtn.addEventListener('click', () => {
+    window.IdentityClient.logout();
+    currentSession = null;
+    applySessionToUI();
+    clearStatus();
+    showAuthMessage('Hai effettuato il logout. Accedi di nuovo per usare il servizio.', false);
+});
+
+function initAuthFlow(){
+    // Se l'URL contiene un token di invito/conferma/recupero (link
+    // ricevuto via email da Netlify), mostriamo il modulo "imposta
+    // password" invece del login normale.
+    const hashToken = window.IdentityClient.consumeHashToken();
+    if(hashToken){
+        pendingVerify = hashToken;
+        authLoginForm.classList.add('hidden');
+        authSetPasswordForm.classList.remove('hidden');
+        if(hashToken.type === 'signup'){
+            // Conferma email: nessuna password da impostare qui, si limita
+            // a confermare l'account con il token.
+            window.IdentityClient.verify('signup', hashToken.token)
+                .then(() => {
+                    pendingVerify = null;
+                    authSetPasswordForm.classList.add('hidden');
+                    authLoginForm.classList.remove('hidden');
+                    showAuthMessage('Email confermata. Ora puoi accedere.', false);
+                })
+                .catch(err => showAuthMessage(err.message || 'Impossibile confermare l\'email.', true));
+        }
+    }
 
     // All'avvio verifichiamo sempre lo stato reale interrogando /api/auth
-    // (che si basa solo sul JWT), invece di fidarci ciecamente di un
-    // eventuale utente Identity già in cache: così la UI riflette sempre
-    // la verità server-side su ruolo e permessi.
+    // (che si basa solo sul JWT), invece di fidarci ciecamente di una
+    // sessione già in cache: così la UI riflette sempre la verità
+    // server-side su ruolo e permessi.
     refreshSession().then(session => { if(session) loadSavedLinks(); });
     window.addEventListener('pageshow', () => { refreshSession(); });
 }

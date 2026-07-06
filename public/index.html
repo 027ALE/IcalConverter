@@ -21,7 +21,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,
 .title p{font-size:14px;line-height:1.45;margin:0}
 .section-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin:4px 0 -4px}
 input[type=file]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;width:100%;font-size:15px;min-height:46px}
-select,input[type=url],input[type=text]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;flex:1;min-width:180px;font:inherit;font-size:16px;color:var(--ink);min-height:46px;-webkit-appearance:none;appearance:none}
+select,input[type=url],input[type=text],input[type=email],input[type=password]{padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);max-width:100%;flex:1;min-width:180px;font:inherit;font-size:16px;color:var(--ink);min-height:46px;-webkit-appearance:none;appearance:none}
 select:focus,input:focus{outline:none;border-color:var(--accent)}
 button{border:0;background:var(--accent);color:var(--accent-ink);padding:12px 18px;border-radius:var(--radius-sm);font-weight:700;font-size:15px;cursor:pointer;min-height:46px;transition:transform .08s ease,opacity .15s ease}
 button:active{transform:scale(.97)}
@@ -91,9 +91,30 @@ a{color:var(--accent)}
   <div id="authScreen" class="auth-screen">
     <div class="card auth-card">
       <h2>Accesso richiesto</h2>
-      <p>L'accesso è gestito da Netlify Identity. Accedi con email e password (o con Google, se abilitato).</p>
-      <div class="row">
-        <button id="authLoginBtn" type="button">Accedi</button>
+      <p>L'accesso è gestito da Netlify Identity. Accedi con email e password.</p>
+      <div id="authLoginForm">
+        <div class="row">
+          <input id="authEmail" type="email" placeholder="Email" autocomplete="email" />
+        </div>
+        <div class="row">
+          <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password" />
+        </div>
+        <div class="row">
+          <button id="authLoginBtn" type="button">Accedi</button>
+          <button id="authSignupBtn" type="button" class="secondary">Registrati</button>
+        </div>
+        <div class="row">
+          <button id="authForgotBtn" type="button" class="secondary">Password dimenticata?</button>
+        </div>
+      </div>
+      <div id="authSetPasswordForm" class="hidden">
+        <p>Imposta la password per completare l'accesso.</p>
+        <div class="row">
+          <input id="authNewPassword" type="password" placeholder="Nuova password" autocomplete="new-password" />
+        </div>
+        <div class="row">
+          <button id="authSetPasswordBtn" type="button">Conferma</button>
+        </div>
       </div>
       <div id="authMsg" class="status" style="display:none"></div>
     </div>
@@ -151,7 +172,7 @@ a{color:var(--accent)}
   </div>
   </div>
 </div>
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/identity-client.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

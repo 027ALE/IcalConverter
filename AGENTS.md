@@ -50,15 +50,22 @@ intenzionalmente.
 ## Modello di autenticazione e autorizzazione
 
 **Autenticazione = solo Netlify Identity nativo.** Non esiste nessun login
-custom, nessuna password gestita da noi, nessun cookie di sessione. Il
-frontend usa esclusivamente il widget `netlify-identity-widget` per
-login/registrazione/logout (email+password è il metodo di default del
-widget; eventuali provider OAuth come Google si aggiungono/rimuovono da
-Netlify → Site settings → Identity → External providers, senza toccare il
-codice). Ogni chiamata alle nostre API allega
+custom, nessuna password gestita da noi (le password dell'utente vanno solo
+verso l'endpoint nativo `/.netlify/identity/*`, mai verso una nostra
+function), nessun cookie di sessione. Il frontend usa
+`public/identity-client.js`, un client minimale che chiama direttamente
+`/.netlify/identity/token|signup|recover|verify` via `fetch`, invece del
+widget `netlify-identity-widget.js`. Motivo del cambio: quel widget carica
+script/frame dal dominio `identity.netlify.com`, bloccato da alcuni
+ad-blocker e protezioni anti-tracciamento (matcha i filtri
+anti-fingerprinting), il che impediva l'apertura del login per una parte
+degli utenti. Le chiamate dirette restano sullo stesso dominio del sito
+("connect-src 'self'" nella CSP, niente di più) e non hanno questo
+problema. Ogni chiamata alle nostre API allega
 `Authorization: Bearer <jwt-identity>`; Netlify inietta l'utente decodificato
 in `context.clientContext.user` di ogni function — è l'UNICA fonte di verità
-su "chi ha fatto la richiesta".
+su "chi ha fatto la richiesta". Questo non cambia: solo il modo in cui il
+JWT viene ottenuto lato client è diverso.
 
 **Autorizzazione = 2 ruoli, entrambi nativi di Netlify Identity**, letti da
 `auth-utils.js` direttamente da `user.app_metadata.roles` (il campo che
