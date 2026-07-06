@@ -1081,7 +1081,6 @@ function initAuthFlow(){
     window.netlifyIdentity.init();
 
     window.netlifyIdentity.on('login', async () => {
-        window.netlifyIdentity.close();
         clearAuthMessage();
         const session = await refreshSession();
         if(session){
